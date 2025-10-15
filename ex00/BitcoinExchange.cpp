@@ -117,14 +117,22 @@ bool	BitcoinExchange::isDigits(const std::string &str)
 
 bool	BitcoinExchange::isLeapYear(int year)
 {
-	if (year % 4 != 0)
-		return (false); // not a multiple of 4 means not a leap year
-	if (year % 100 != 0)
-		return (true); // is a leap year (multiple of 4) but not century
-	if (year % 400 == 0)
-		return (true);   // divisible by 400 → leap century
+	// multiple of 4 → maybe leap; check century rule
+	if (year % 4 == 0)
+	{
+		if (year % 100 == 0)
+		{
+			// century → leap only if divisible by 400
+			if (year % 400 == 0)
+				return (true); // leap century (e.g., 2000)
+			else
+				return (false); // common century (e.g., 1900)
+		}
+		else
+			return (true); // not a century → leap (e.g., 2024)
+	}
 	else
-		return (false);  // not divisible by 400 → common century
+		return (false); // not multiple of 4 → common year
 
 }
 
