@@ -11,9 +11,13 @@
 # define RESET "\033[0m"
 
 # include <iostream>
+# include <string> // c_str()
 # include <map>
+# include <climits> // INT_MAX
 # include <sstream>
 # include <stdexcept>
+# include <fstream> // std::ifstream
+# include <stdlib.h> // for strtod
 
 
 class	BitcoinExchange
@@ -26,17 +30,21 @@ class	BitcoinExchange
 		BitcoinExchange(const std::string &filepath)
 		~BitcoinExchange();
 		BitcoinExchange(const BitcoinExchange &other);
-		BitcointExchange	&operator=(const BitcoinExchange &other);
+		BitcoinExchange	&operator=(const BitcoinExchange &other);
 
-		bool	loadFile(const std::string &filepath);
+		bool	loadCSVFile(const std::string &filepath);
 
-		bool	parseLine(std::string &line, std::string &date, double &price);
+		// Parser
+		bool	parseCSVLine(std::string &line, std::string &date, double &price);
+		bool	parsePrice(std::string &price_str, double &price);
 
 		// Helper
 		std::string	trim(const std::string &str);
 		bool	checkValidDate(const std::string &str);
 		bool	isDigits(const std::string &str);
 		bool	isLeapYear(int year);
+		bool	isValidMonth(const int month);
+		bool	isValidYear(const int year);
 
 
 		// Exception
@@ -44,7 +52,7 @@ class	BitcoinExchange
 		{
 			public:
 				virtual const char *what() const throw();
-		}
+		};
 };
 
 #endif

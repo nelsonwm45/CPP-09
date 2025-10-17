@@ -37,7 +37,7 @@ BitcoinExchange	&BitcoinExchange::operator=(const BitcoinExchange &other)
 // =============================================================================
 // File Management
 // =============================================================================
-bool	BitcoinExchange::loadFile(const std::string &filepath)
+bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 {
 	std::ifstream	file(filepath.c_str());
 	if (!file)
@@ -56,13 +56,27 @@ bool	BitcoinExchange::loadFile(const std::string &filepath)
 				this->_database[date] = price;
 		}
 	}
+
+	while (std::getline(file, line))
+	{
+		if (line.empty())
+			continue;
+		std::string	date;
+		double	price;
+		if (parseLine(line, date, price))
+			this->_database[date] = price;
+	}
+	if (this->_database.empty())
+		return (false);
+	else
+		return (true);
 }
 
 
 // =============================================================================
 // Parser
 // =============================================================================
-bool	BitcoinExchange::parseLine(std::string &line, std::string &date, double &price)
+bool	BitcoinExchange::parseCSVLine(std::string &line, std::string &date, double &price)
 {
 	// Expected: YYYY-MM-DD,price
 	std::string::size_type	comma = line.find(',');
@@ -76,7 +90,25 @@ bool	BitcoinExchange::parseLine(std::string &line, std::string &date, double &pr
 	if (checkValidDate(date) == false)
 		return (false);
 
-	// process pricee TODOOO
+	// process pricee
+	if (parsePrice(price_str, price) == false)
+		return (false);
+	return (true);
+}
+
+bool	BitcoinExchange::parsePrice(std::string &price_str, double &price)
+{
+	char	*end = 0;
+	errno = 0;
+
+	price = std::strtod(price_str.c_str(), &end);
+	if (end == price_str.c_str())
+		return (false);
+	if (*end != '\0')
+		return (false);
+	if (errno == ERANGE)
+		return (false);
+	return (true);
 }
 
 
@@ -152,14 +184,14 @@ bool	BitcoinExchange::checkValidDate(const std::string &str)
 	if (!isDigits(yearStr) || !isDigits(monthStr) || !isDigits(dayStr))
 		return (false);
 	
-	int	y = std::atoi(yearStr.c_str());
-	int	m = std::atoi(monthStr.c_str());
-	int	d = std::atoi(datStr.c_str());
-	if (m < 1 || m > 12)
+	int	year = std::atoi(yearStr.c_str());
+	int	month = std::atoi(monthStr.c_str());
+	int	day = std::atoi(datStr.c_str());
+	if (isValidMonth(month) == false || isValidYear(year) == false)
 		return (false);
 	static const int mdays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-	int maxd = mdays[m - 1];
-	if (m == 2 && isLeapYear(y))
+	int maxd = mdays[month - 1];
+	if (month == 2 && isLeapYear(year))
 		maxd = 29;
 	if (day >= 1 && day <= maxd)
 		return (true);
@@ -167,6 +199,19 @@ bool	BitcoinExchange::checkValidDate(const std::string &str)
 		return (false);
 }
 
+bool	BitcoinExchange::isValidMonth(const int month)
+{
+	if (month < 1 || month > 12)
+		return (false);
+	return (true);
+}
+
+bool	BitcoinExchange::isValidYear(const int year)
+{
+	if (year <= 0 || year >= INT_MAX)
+		return (false);
+	return (true);
+}
 // =============================================================================
 // Exception
 // =============================================================================
