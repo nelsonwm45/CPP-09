@@ -35,7 +35,7 @@ BitcoinExchange	&BitcoinExchange::operator=(const BitcoinExchange &other)
 }
 
 // =============================================================================
-// File Management
+// CSV File
 // =============================================================================
 bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 {
@@ -72,10 +72,6 @@ bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 		return (true);
 }
 
-
-// =============================================================================
-// Parser
-// =============================================================================
 bool	BitcoinExchange::parseCSVLine(std::string &line, std::string &date, double &price)
 {
 	// Expected: YYYY-MM-DD,price

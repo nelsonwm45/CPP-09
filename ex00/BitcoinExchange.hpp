@@ -32,11 +32,12 @@ class	BitcoinExchange
 		BitcoinExchange(const BitcoinExchange &other);
 		BitcoinExchange	&operator=(const BitcoinExchange &other);
 
+		// CSV File
 		bool	loadCSVFile(const std::string &filepath);
-
-		// Parser
 		bool	parseCSVLine(std::string &line, std::string &date, double &price);
 		bool	parsePrice(std::string &price_str, double &price);
+
+		
 
 		// Helper
 		std::string	trim(const std::string &str);

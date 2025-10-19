@@ -1,5 +1,25 @@
 #include "BitcoinExchange.hpp"
 
+/*
+	data.csv
+	YYYY-MM-DD,exchange_rate (in this format)
+	e.g.
+	2011-01-03,0.3
+	2011-01-09,0.32
+	2012-01-11,7.1
+
+	input file
+	YYYY-MM-DD | value
+	date | value
+	2011-01-03 | 3
+	2011-01-09 | 1
+	2012-01-11 | 1.2
+	2001-42-42
+
+
+
+*/
+
 int main(int ac, char **av)
 {
 	if (ac != 2)
