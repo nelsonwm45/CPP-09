@@ -15,9 +15,11 @@
 # include <map>
 # include <climits> // INT_MAX
 # include <sstream>
+# include <iomanip>
 # include <stdexcept>
 # include <fstream> // std::ifstream
 # include <stdlib.h> // for strtod
+# include <cerrno> // for errno/ERANGE
 
 
 class	BitcoinExchange
@@ -25,31 +27,42 @@ class	BitcoinExchange
 	private:
 		std::map<std::string, double>	_database;
 
-		BitcoinExchange();
+
 	public:
-		BitcoinExchange(const std::string &filepath)
+		BitcoinExchange();
 		~BitcoinExchange();
 		BitcoinExchange(const BitcoinExchange &other);
 		BitcoinExchange	&operator=(const BitcoinExchange &other);
 
-		// CSV File
+		// CSV File : aim to get the rate/price
 		bool	loadCSVFile(const std::string &filepath);
 		bool	parseCSVLine(std::string &line, std::string &date, double &price);
 		bool	parsePrice(std::string &price_str, double &price);
 
-		
+		// File Parser
+		void	processInputFile(const std::string &filepath);
+		bool	checkAndFetchRate(const std::string &rawLine,
+								const std::string &date,
+								const std::string &valueStr,
+								double &value,
+								double &rate);
+		bool	parseValue(const std::string &valueStr, double &value);
+		bool	checkValue(const double &value);
+		bool	findRateOnOrBefore(const std::string &date, double &rate) const;
+		std::string	formater(double x);
 
 		// Helper
 		std::string	trim(const std::string &str);
-		bool	checkValidDate(const std::string &str);
+		bool	isValidDate(const std::string &str);
 		bool	isDigits(const std::string &str);
 		bool	isLeapYear(int year);
 		bool	isValidMonth(const int month);
 		bool	isValidYear(const int year);
+		bool	isInputFileHeader(const std::string &line);
 
 
 		// Exception
-		class	FileNotExist: public std::exception
+		class	CouldNotOpenFile: public std::exception
 		{
 			public:
 				virtual const char *what() const throw();

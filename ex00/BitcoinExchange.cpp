@@ -6,19 +6,6 @@
 
 BitcoinExchange::BitcoinExchange() {}
 
-BitcoinExchange::BitcoinExchange(const std::string &filepath)
-{
-	try
-	{
-		if (loadFile(filepath) == false)
-			throw (BitcoinExchange::FileNotExist());
-	}
-	catch (std::exception &e)
-	{
-		std::cerr << e.what() << "\n";
-	}
-}
-
 BitcoinExchange::~BitcoinExchange() {}
 
 BitcoinExchange::BitcoinExchange(const BitcoinExchange &other):
@@ -44,7 +31,7 @@ bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 		return (false);
 	std::string	line;
 
-	// Optional, Accept "date,exchange_rate"
+	// Skip Header "date,exchange_rate"
 	if (std::getline(file, line))
 	{
 		if (line.find("date") == std::string::npos)
@@ -52,8 +39,8 @@ bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 			// Parse if first line is data
 			std::string	date;
 			double	price;
-			if (parseLine(line, date, price))
-				this->_database[date] = price;
+			if (parseCSVLine(line, date, price))
+				_database[date] = price;
 		}
 	}
 
@@ -63,10 +50,10 @@ bool	BitcoinExchange::loadCSVFile(const std::string &filepath)
 			continue;
 		std::string	date;
 		double	price;
-		if (parseLine(line, date, price))
-			this->_database[date] = price;
+		if (parseCSVLine(line, date, price))
+			_database[date] = price;
 	}
-	if (this->_database.empty())
+	if (_database.empty())
 		return (false);
 	else
 		return (true);
@@ -83,7 +70,7 @@ bool	BitcoinExchange::parseCSVLine(std::string &line, std::string &date, double 
 	price_str = line.substr(comma + 1);
 	date = BitcoinExchange::trim(date);
 	price_str = BitcoinExchange::trim(price_str);
-	if (checkValidDate(date) == false)
+	if (isValidDate(date) == false)
 		return (false);
 
 	// process pricee
@@ -105,6 +92,197 @@ bool	BitcoinExchange::parsePrice(std::string &price_str, double &price)
 	if (errno == ERANGE)
 		return (false);
 	return (true);
+}
+
+// =============================================================================
+// File Parser
+// =============================================================================
+
+/*
+	Accept int or float text
+	Subject requires 0..1000 range checks elsewhere
+*/
+bool	BitcoinExchange::parseValue(const std::string &valueStr, double &value)
+{
+	char	*end = 0;
+	errno = 0;
+
+	value = std::strtod(valueStr.c_str(), &end);
+	if (end == valueStr.c_str())
+		return (false);
+	if (*end != '\0')
+		return (false);
+	if (errno == ERANGE)
+		return (false);
+	return (true);
+}
+
+/*
+	value : positive integer, between 0 and 1000.
+*/
+bool	BitcoinExchange::checkValue(const double &value)
+{
+	if (value < 0.0)
+	{
+		std::cerr << "Error: not a positive number." << std::endl;
+		return (false);
+	}
+
+	if (value > 1000.0)
+	{
+		std::cerr << "Error: too large a number." << std::endl;
+		return (false);
+	}
+	return (true);
+}
+
+/*
+	std::lower_bound(k) returns an iterator to the first key that is not less than k
+	- exact key found : return that key
+	- no exact match : return to "FIRST BIGGER KEY"
+	- if all keys smaller than k : return end();
+
+
+	Map keys: { "2021-01-01", "2021-01-05", "2021-01-10" }
+
+	Query "2021-01-05" → lower_bound points to "2021-01-05" (exact) → use it.
+	Query "2021-01-07" → lower_bound points to "2021-01-10" (> query) → step back → "2021-01-05".
+	Query "2021-01-11" → lower_bound is end() → step back → "2021-01-10".
+	Query "2020-12-31" → lower_bound points to "2021-01-01" (the first), not equal → there’s no earlier key → false.
+*/
+bool	BitcoinExchange::findRateOnOrBefore(const std::string &date, double &rate) const
+{
+	if (_database.empty())
+		return (false);
+	std::map<std::string, double>::const_iterator it = _database.lower_bound(date);
+	if (it == _database.end()) // when all date in container is lower than query date, get the latest date
+		--it;
+	else if (it->first != date) // found a key but not exact match
+	{
+		if (it == _database.begin()) // the query date is even smaller than the container smallest date
+			return (false);
+		--it; // get the nearest lower key
+	}
+	rate = it->second;
+	return (true);
+}
+
+bool	BitcoinExchange::checkAndFetchRate(const std::string &rawLine,
+											const std::string &date,
+											const std::string &valueStr,
+											double &value,
+											double &rate)
+{
+	if (isValidDate(date) == false)
+	{
+		std::cerr << "Error: bad input => " << rawLine << std::endl;
+		return (false);
+	}
+	if (parseValue(valueStr, value) == false)
+	{
+		std::cerr << "Error: bad input => " << rawLine << std::endl;
+		return (false);
+	}
+	if (checkValue(value) == false)
+		return (false);
+	// exchange rate on / before the date
+	if (findRateOnOrBefore(date, rate) == false)
+	{
+		std::cerr << "Error: bad input => " << rawLine << std::endl;
+		return (false);
+	}
+	return (true);
+}
+
+/*
+	Format double to at most 2 decimals, trimming trailing zeros.
+
+	floatfield(a category, mask) - controls how floating-point numbers are printed, it has two modes
+		fixed(a mode, flag) --------> 1234.56
+		scientific(a mode, flag) ---> 1.23456e+03
+	default float formatting - chooses fixed or scientific automatically based on value and precision
+	setf(std::ios::fixed) --> set to fixed
+	setf(std::ios::scientific) --> set to scientific
+	unsetf(mask) ----> unsetf(std::ios::floatfield) --> clears both fixed & scientific
+
+
+	OTHER COMMON MASK:
+		std::ios::adjustfield → left | right | internal
+		std::ios::basefield → dec | hex | oct
+
+	oss.setf(std::ios::fixed)
+		Tells the stream to use fixed-point notation (e.g., 123.45), not scientific (1.2345e+02).
+		Internally this sets the stream’s floatfield to fixed.
+	std::setprecision(2)
+		With fixed or scientific set: precision = digits after the decimal point (e.g., 123.456 → 123.46). ---- I choose thissss since I set to "fixed"
+		With default floatfield (neither fixed nor scientific): precision = significant digits (e.g., 123.456 → 1.2e+02 or 123 depending on magnitude/implementation).
+*/
+std::string	BitcoinExchange::formater(double x)
+{
+	std::ostringstream	oss;
+	oss.setf(std::ios::fixed);
+	oss << std::setprecision(2) << x; // e.g. "0.90"
+	std::string	str = oss.str();
+
+	std::string::size_type	dot = str.find('.');
+	if (dot != std::string::npos)
+	{
+		while (!str.empty() && str[str.size() - 1] == '0')
+			str.erase(str.size() - 1); // remove trailing zeros
+		if (!str.empty() && str[str.size() - 1] == '.')
+			str.erase(str.size() - 1); // remove lone '.'
+	}
+	return (str);
+}
+
+/*
+	seekg moves the get pointer (the read cursor) of the input stream.
+		f.seekg(0); moves the cursor to byte 0 — the beginning of the file.
+		After this call, the next std::getline(f, line) will return the first line again.
+
+	std::cout.precision(2)
+		With fixed, precision = number of digits after the decimal (so 2 → xx.yy).
+		Without fixed (default floatfield), precision = total significant digits.
+*/
+void	BitcoinExchange::processInputFile(const std::string &filepath)
+{
+	std::ifstream	file(filepath.c_str());
+	if (!file)
+	{
+		std::cerr << "Error: could not open file." << std::endl;
+		return ;
+	}
+	std::string	line;
+
+	// Skip Header "date | value"
+	if (std::getline(file, line))
+	{
+		if (isInputFileHeader(line) == false)
+			file.seekg(0); // reset the cursor
+	}
+
+	while (std::getline(file, line))
+	{
+		if (line.empty())
+			continue ;
+		
+		// Parse "data | value"
+		std::string::size_type	bar = line.find('|');
+		if (bar == std::string::npos)
+		{
+			std::cerr << "Error: bad input => " << line << std::endl;
+			continue;
+		}
+		std::string	date = trim(line.substr(0, bar));
+		std::string	valueStr = trim(line.substr(bar + 1));
+		
+		double	value = 0.0;
+		double	rate = 0.0;
+		if (checkAndFetchRate(line, date, valueStr, value, rate) == false)
+			continue;
+		double	result = value * rate;
+		std::cout << date << " => " << valueStr << " = " << formater(result) << std::endl;
+	}
 }
 
 
@@ -169,7 +347,7 @@ bool	BitcoinExchange::isLeapYear(int year)
 	Month must have two values
 	Day also must have two values
 */
-bool	BitcoinExchange::checkValidDate(const std::string &str)
+bool	BitcoinExchange::isValidDate(const std::string &str)
 {
 	if (str.size() != 10 || str[4] != '-' || str[7] != '-')
 		return (false);
@@ -182,7 +360,7 @@ bool	BitcoinExchange::checkValidDate(const std::string &str)
 	
 	int	year = std::atoi(yearStr.c_str());
 	int	month = std::atoi(monthStr.c_str());
-	int	day = std::atoi(datStr.c_str());
+	int	day = std::atoi(dayStr.c_str());
 	if (isValidMonth(month) == false || isValidYear(year) == false)
 		return (false);
 	static const int mdays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
@@ -208,10 +386,20 @@ bool	BitcoinExchange::isValidYear(const int year)
 		return (false);
 	return (true);
 }
+
+bool	BitcoinExchange::isInputFileHeader(const std::string &line)
+{
+	std::string	trimmed = trim(line);
+
+	if (trimmed == "date | value")
+		return (true);
+	else
+		return (false);
+}
 // =============================================================================
 // Exception
 // =============================================================================
-const char	*BitcoinExchange::FileNotExist::what() const throw ()
+const char	*BitcoinExchange::CouldNotOpenFile::what() const throw ()
 {
-	return ("[BitcoinExchange]: File Does Not Exist");
+	return ("Error: could not open file.");
 }

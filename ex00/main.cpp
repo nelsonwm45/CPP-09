@@ -16,8 +16,6 @@
 	2012-01-11 | 1.2
 	2001-42-42
 
-
-
 */
 
 int main(int ac, char **av)
@@ -27,4 +25,12 @@ int main(int ac, char **av)
 		std::cerr << "Error: could not open file." << std::endl;
 		return (1);
 	}
+	BitcoinExchange	be;
+	if (be.loadCSVFile("data.csv") == false)
+	{
+		std::cerr << "Error: could not open file." << std::endl;
+		return (1);
+	}
+	be.processInputFile(av[1]);
+	return (0);
 }
