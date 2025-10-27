@@ -40,7 +40,7 @@ class	BitcoinExchange
 		bool	parsePrice(std::string &price_str, double &price);
 
 		// File Parser
-		void	processInputFile(const std::string &filepath);
+		void	loadInputFile(const std::string &filepath);
 		bool	checkAndFetchRate(const std::string &rawLine,
 								const std::string &date,
 								const std::string &valueStr,

@@ -244,7 +244,7 @@ std::string	BitcoinExchange::formater(double x)
 		With fixed, precision = number of digits after the decimal (so 2 → xx.yy).
 		Without fixed (default floatfield), precision = total significant digits.
 */
-void	BitcoinExchange::processInputFile(const std::string &filepath)
+void	BitcoinExchange::loadInputFile(const std::string &filepath)
 {
 	std::ifstream	file(filepath.c_str());
 	if (!file)

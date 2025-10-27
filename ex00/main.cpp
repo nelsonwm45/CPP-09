@@ -31,6 +31,6 @@ int main(int ac, char **av)
 		std::cerr << "Error: could not open file." << std::endl;
 		return (1);
 	}
-	be.processInputFile(av[1]);
+	be.loadInputFile(av[1]);
 	return (0);
 }
