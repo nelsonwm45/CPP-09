@@ -23,7 +23,7 @@ RM = rm -f
 
 # Source and Object
 SRCS =	main.cpp \
-		BitcoinExchange.cpp \
+		RPN.cpp \
 
 
 OBJ = $(SRCS:.cpp=.o)
