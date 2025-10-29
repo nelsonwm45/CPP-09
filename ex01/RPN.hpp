@@ -5,6 +5,8 @@
 #include <string>
 #include <stack>
 #include <list>
+#include <sstream>
+#include <climits>  // LONG_MAX, LONG_MIN
 
 /*
 	Infix (usual mathematical operation) : 3 + 4 * 2
@@ -34,16 +36,54 @@
 
 class	RPN
 {
-	private:
-		std::stack<long, std::list<long>> _stack;
-
 	public:
 		RPN();
 		~RPN();
 		RPN(const RPN &other);
 		RPN	&operator=(const RPN &other);
 
+		// Token
+		enum TokenType
+		{
+			TOKEN_NUMBER,
+			TOKEN_OPERATOR,
+			TOKEN_INVALID,
+			TOKEN_END
+		};
+
+		struct Token
+		{
+			std::string	text;
+			TokenType	type;
+		};
+
+		// API
 		bool	calculateExpression(const std::string &expression, long &output);
+
+	private:
+		std::stack<long, std::list<long> > _stack; // C++98 require a space
+
+		// Tokenization Helper
+		bool	readNextToken(std::istringstream &istream, Token &outToken) const;
+		void	classifyToken(Token &token) const;
+		bool	isOperatorChar(char c) const;
+		bool	isSingleDigitNumber(const std::string &str) const;
+
+		// Evaluation Helper
+		void	cleanStack();
+		bool	handleNumberToken(const Token &token);
+		bool	handleOperatorToken(const Token &token);
+		bool	popTwoOperands(long &lhs, long &rhs);
+		bool	applyOperator(long lhs, long rhs, char op, long &results) const;
+		bool	finalizeResults(long &finalOutput);
+
+		// Arithmetic
+		bool	safeAdd(long a, long b, long &out) const;
+		bool	safeSub(long a, long b, long &out) const;
+		bool	safeMul(long a, long b, long &out) const;
+		bool	safeDiv(long a, long b, long &out) const;
+
+
 };
 
 #endif
