@@ -321,7 +321,7 @@ bool RPN::safeMul(long a, long b, long &out) const
 		−128 is 1000 0000
 		flip → 0111 1111
 		+1 → 1000 0000 (you’re back to −128!)
-	!! So +128 can’t be represented in 8 bits. It doesn’t fit.
+	!! So +128 can’t be represented in 8 bits. It doesn’t fit. So Apply to Bigger Byte
 */
 bool RPN::safeDiv(long a, long b, long &out) const
 {
