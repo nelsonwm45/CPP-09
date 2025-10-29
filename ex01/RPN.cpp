@@ -310,13 +310,13 @@ bool RPN::safeMul(long a, long b, long &out) const
 		+5 → 0000 0101
 		flip → 1111 1010
 		+1 → 1111 1011 ← this pattern means −5
+	There’s one more negative number than positive. That’s the key quirk.
 	
 	What range do 8 bits cover?
 		Min: −128 (1000 0000)
 		Max: +127 (0111 1111)
 	
 	Why is there a weird special case?
-
 	Try to negate −128 in 8 bits:
 		−128 is 1000 0000
 		flip → 0111 1111
