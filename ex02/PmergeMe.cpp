@@ -31,8 +31,9 @@ PmergeMe &PmergeMe::operator=(const PmergeMe &other)
 // ==============================================================
 void	PmergeMe::setInput(const std::vector<unsigned int> &input)
 {
-	this->_vec = input;
 	_deq.clear();
+	_vec.clear();
+	this->_vec = input;
 	size_t	i = 0;
 	while (i < values.size())
 	{
@@ -54,6 +55,107 @@ void	PmergeMe::sortUsingVector(std::vector<unsigned int> &outSorted)
 // Ford-Johnson (Vector)
 // ==============================================================
 
+/*
+	Straggler -> leftover single element
+*/
+void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
+{
+	VectorPair	vectorPair;
+	initialiseVectorPair(vectorPair);
+	makePairsVector(data, vectorPair);
+	sortPairsByLargeVector(vectorPair.pairs);
+	VectorChain	vectorChain;
+	initialiseVectorChain(vectorChain);
+	buildMainAndPendVector(vectorPair.pairs, vectorChain);
+	buildJacobsthalOrder(vectorChain.pend.size(), vectorChain.order);
+
+}
+
+void	PmergeMe::initialiseVectorPair(VectorPair &vectorPair)
+{
+	vectorPair.pairs.clear();
+	vectorPair.hasStraggler = false;
+	vectorPair.straggler = 0;
+}
+
+void	PmergeMe::makePairsVector(const std::vector<unsigned int> &data,
+							VectorPair &vectorPair)
+{
+	size_t	i = 0;
+	while (i + 1 < data.size()) // because we access two elements at a time
+	{
+		unsigned int	a = data[i];
+		unsigned int	b = data[i + 1];
+		PairV	newPairs = compareNumberInPair(a, b);
+		vectorPair.pairs.push_back(newPairs);
+		i += 2;
+	}
+	if (i < data.size()) // means has straggler
+	{
+		vectorPair.hasStraggler = true;
+		vectorPair.straggler = data[i];
+	}
+}
+
+PairV	PmergeMe::compareNumberInPair(const unsigned int &a, const unsigned int &b)
+{
+	PairV	temp;
+	if (a <= b)
+	{
+		temp.small = a;
+		temp.large = b;
+	}
+	else
+	{
+		temp.small = a;
+		temp.large = b;
+	}
+	return (temp);
+}
+
+/*
+	std::sort is a function template.
+	One of its overloads takes comparison predicate 
+		---> bool comp(const T& a, const T& b);
+*/
+void	PmergeMe::sortPairsByLargeVector(std::vector<PairV> &pairs)
+{
+	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairVLessByLarge);
+}
+
+/*
+	A function to determine which pair come earlier : left/right side
+	std::sort will determine swapping/keep according to its algorithm
+*/
+
+bool	PmergeMe::pairVLessByLarge(const PairV &lhs, const PairV &rhs)
+{
+	if (lhs.large < rhs.large)
+		return (true);
+	else
+		return (false);
+}
+
+void	PmergeMe::initialiseVectorChain(VectorChain &vectorChain)
+{
+	vectorChain.mainChain.clear();
+	vectorChain.pend.clear();
+	vectorChain.posOfLarge.clear();
+	vectorChain.order.clear();
+}
+
+void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
+										VectorChain &vectorChain)
+{
+	size_t	i = 0;
+	while (i < sortedPairs.size())
+	{
+		vectorChain.mainChain.push_back(sortedPairs[i].large);
+		vectorChain.pend.push_back(sortedPairs[i].small);
+		vectorChain.posOfLarge.push_back(i);
+		i++;
+	}
+}
 
 
 // ==============================================================
@@ -63,11 +165,94 @@ void	PmergeMe::sortUsingVector(std::vector<unsigned int> &outSorted)
 
 
 // ==============================================================
-// Shared Helper
+// Helper
 // ==============================================================
 
+/*
+	nPairs = 7, J = {0,1,3,5,11,...}
+	Window (1,3] → indices 2,1 (push 1,0? careful: we push i-1,
+		so 2→1, 1→0 but start is excluded → we actually push 1 then 0… 
+		however we later also push a final 0, 
+		so in practice we clamp at start=1 and skip i==1? 
+		Then pushes i-1 while i>start, so it yields 2→1, i=1 stops → good: 1 only.)
+	Window (3,5] → push 4,3 → indices 3,2
+	Tail (5,7] → push 7,6,5 → indices 6,5,4
+	Finally push 0
+*/
+void	PmergeMe::buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insertOrder)
+{
+	if (numPairs == 0)
+		return ;
+	if (numPairs == 1)
+	{
+		insertOrder.push_back(0);
+		return ;
+	}
+	std::vector<size_t>	JacobsthalNumber;
+	makeJacobsthalNumbers(numPairs, JacobsthalNumber);
+	assignInsertOrder(numPairs, JacobsthalNumber, insertOrder);
+}
 
+void	PmergeMe::assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder)
+{
+	size_t	lastCovered = 1;
+	size_t	k = 2;
+	while (k < JacobsthalNumber.size())
+	{
+		size_t	start = JacobsthalNumber[k - 1];
+		size_t	end = JacobsthalNumber[k];
+		// if (start < 1) // dont allow 0 or negative
+		// 	start = 1;
+		if (end > numPairs) // don't overshoot the last pair
+			end = numPairs;
+		if (start < end)
+		{
+			size_t	i = end;
+			while (i > start)
+			{
+				insertOrder.push_back(i - 1);
+				i--;
+			}
+			lastCovered = end;
+		}
+		if (lastCovered == numPairs)
+			break;
+		k++;
+	}
+	// insert the tails
+	size_t	i = numPairs;
+	while (i > lastCovered)
+	{
+		insertOrder.push_back(i - 1);
+		i++;
+	}
+	insertOrder.push_back(0);
+}
 
+/*
+	Jacobsthal Sequence Formula
+	J0 = 0 , J1 = 1
+	Jn = 2 * (Jn-2) + (Jn-1)
+	Sequence: 0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341,...
+*/
+void	PmergeMe::makeJacobsthalNumbers(size_t limit, std::vector<size_t> &JacobsthalNumber)
+{
+	JacobsthalNumber.clear();
+	JacobsthalNumber.push_back(0);
+	if (limit >= 1)
+		JacobsthalNumber.push_back(1);
+	while (1)
+	{
+		if (JacobsthalNumber.size() < 2)
+			break;
+		size_t	a = JacobsthalNumber[JacobsthalNumber.size() - 1];
+		size_t	b = JacobsthalNumber[JacobsthalNumber.size() - 2];
+		size_t	nextValue = a + 2 * b;
+		JacobsthalNumber.push_back(nextValue);
+		if (nextValue >= limit)
+			break;
+	}
+}
 
 // ==============================================================
 // Main : Parser && Helper

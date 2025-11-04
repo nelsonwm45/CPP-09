@@ -12,6 +12,6 @@ int main(int ac, char **av)
 	if (parseArgs(ac, av, input) == false)
 		return (1);
 	printLineWithCap<std:vector<unsigned int> >("Before: ", input, 100);
-	PmergeMe sorter;
+	PmergeMe	sorter;
 	sorter.setInput(input);
 }

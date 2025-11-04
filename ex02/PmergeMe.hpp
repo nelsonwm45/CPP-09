@@ -35,19 +35,33 @@ class PmergeMe
 			unsigned int large;
 		};
 
+		struct VectorPair
+		{
+			std::vector<PairV> pairs;
+			bool	hasStraggler;
+			unsigned int	straggler;
+		};
+
+		struct VectorChain
+		{
+			std::vector<unsigned int> mainChain;
+			std::vector<unsigned int> pend;
+			std::vector<size_t>	posOfLarge; // max search when inserting pend to main
+			std::vector<size_t>	order;
+		}
+
 		void fjSortVector(std::vector<unsigned int> &data);
+		void initialiseVectorPair(VectorPair &vectorPair);
 
 		void makePairsVector(const std::vector<unsigned int> &data,
-								std::vector<PairV> &pairs,
-								bool &hasStraggler,
-								unsigned int &straggler);
+								VectorPair &vectorPair);
+		PairV	compareNumberInPair(const unsigned int &a, const unsigned int &b);
 
 		void sortPairsByLargeVector(std::vector<PairV> &pairs);
-
-		void buildMainAndPendVector(const std::vector<PairV> &pairs,
-									std::vector<unsigned int> &mainChain,
-									std::vector<unsigned int> &pend,
-									std::vector<size_t> &posOfLarge);
+		
+		void	initialiseVectorChain(VectorChain &vectorChain);
+		void buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
+									VectorChain &vectorChain);
 
 		size_t boundedBinarySearchVector(const std::vector<unsigned int> &mainChain,
 											unsigned int value,
@@ -80,9 +94,10 @@ class PmergeMe
 										size_t leftBound,
 										size_t rightBound);
 		
-		// Shared Helper
-		void makeJacobsthalNumbers(size_t limit, std::vector<size_t> &J);
-		void buildJacobsthalOrder(size_t nPairs, std::vector<size_t> &insertOrder);
+		// Helper
+		void	assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder);
+		void makeJacobsthalNumbers(size_t limit, std::vector<size_t> &JacobsthalNumber);
+		void buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insertOrder);
 
 		static bool pairVLessByLarge(const PairV &lhs, const PairV &rhs);
 		static bool pairDLessByLarge(const PairD &lhs, const PairD &rhs);
