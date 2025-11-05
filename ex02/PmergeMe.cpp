@@ -193,39 +193,27 @@ void	PmergeMe::buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insert
 	assignInsertOrder(numPairs, JacobsthalNumber, insertOrder);
 }
 
+/**
+ * Double check
+ */
 void	PmergeMe::assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder)
 {
+	insertOrder.reserve(insertOrder.size() + numPairs);
 	size_t	lastCovered = 1;
-	size_t	k = 2;
-	while (k < JacobsthalNumber.size())
+	for (size_t k = 2; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
 	{
 		size_t	start = JacobsthalNumber[k - 1];
 		size_t	end = JacobsthalNumber[k];
-		// if (start < 1) // dont allow 0 or negative
-		// 	start = 1;
-		if (end > numPairs) // don't overshoot the last pair
+		if (end > numPairs)
 			end = numPairs;
-		if (start < end)
-		{
-			size_t	i = end;
-			while (i > start)
-			{
-				insertOrder.push_back(i - 1);
-				i--;
-			}
-			lastCovered = end;
-		}
-		if (lastCovered == numPairs)
-			break;
-		k++;
+		if (start >= end)
+			continue;
+		for (size_t i = end; i > start; i--)
+			insertOrder.push_back(i - 1);
+		lastCovered = end;
 	}
-	// insert the tails
-	size_t	i = numPairs;
-	while (i > lastCovered)
-	{
+	for (size_t i = numPairs; i > lastCovered; i--)
 		insertOrder.push_back(i - 1);
-		i++;
-	}
 	insertOrder.push_back(0);
 }
 
