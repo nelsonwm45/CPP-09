@@ -63,7 +63,7 @@ class PmergeMe
 		PairV	compareNumberInPairVector(const unsigned int &a, const unsigned int &b);
 
 		void	sortPairsByLargeVector(std::vector<PairV> &pairs);
-		static bool	vectorPairLess(const PairV &lhs, const PairV &rhs);
+		static bool	pairVLessByLarge(const PairV &lhs, const PairV &rhs);
 		
 		void	initialiseVectorChain(VectorChain &vectorChain);
 		void	buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
@@ -117,7 +117,7 @@ class PmergeMe
 		PairD	compareNumberInPairDeque(const unsigned int &a, const unsigned int &b);
 
 		void	sortPairsByLargeDeque(std::deque<PairD> &pairs);
-		static bool	dequePairLess(const PairD &lhs, const PairD &rhs);
+		static bool	pairDLessByLarge(const PairD &lhs, const PairD &rhs);
 
 		void	initialiseDequeChain(DequeChain &dequeChain);
 		void	buildMainAndPendDeque(const std::deque<PairD> &pairs,
@@ -139,8 +139,6 @@ class PmergeMe
 		void	insertStragglerintoMainChainDeque(std::deque<unsigned int> &mainChain,
 													DequePair &dequePair);
 
-		static size_t	*_activeVectorComparisonCounter;
-		static size_t	*_activeDequeComparisonCounter;
 	};
 
 // Main : Parser && Helper

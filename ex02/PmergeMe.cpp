@@ -2,182 +2,6 @@
 #include <algorithm> // std::sort
 #include <limits>
 
-template <typename PairType>
-struct PmergeMe::PairIndexSorter
-{
-	struct IndexPair
-	{
-		size_t	small;
-		size_t	large;
-	};
-
-	struct Chain
-	{
-		std::vector<size_t>	mainChain;
-		std::vector<size_t>	pend;
-		std::vector<size_t>	posOfLarge;
-		std::vector<size_t>	order;
-	};
-
-	static void	sort(PmergeMe &owner,
-						const std::vector<PairType> &pairData,
-						std::vector<size_t> &indices,
-						size_t &comparisonCounter)
-	{
-		if (indices.size() <= 1)
-			return ;
-
-		std::vector<IndexPair>	pairs;
-		bool					hasStraggler = false;
-		size_t					straggler = 0;
-		makePairs(pairData, indices, pairs, hasStraggler, straggler, comparisonCounter);
-
-		std::vector<size_t>	largeIndices;
-		largeIndices.reserve(pairs.size());
-		for (size_t i = 0; i < pairs.size(); ++i)
-			largeIndices.push_back(pairs[i].large);
-
-		sort(owner, pairData, largeIndices, comparisonCounter);
-
-		std::vector<IndexPair>	sortedPairs;
-		reorderPairs(pairs, largeIndices, sortedPairs);
-
-		Chain	chain;
-		buildMainAndPend(sortedPairs, chain);
-		owner.buildJacobsthalOrderVector(chain.pend.size(), chain.order);
-		insertPend(pairData, chain, comparisonCounter, owner);
-		if (hasStraggler)
-			insertStraggler(pairData, chain.mainChain, straggler, comparisonCounter);
-		indices.swap(chain.mainChain);
-	}
-
-private:
-	static IndexPair	compare(const std::vector<PairType> &pairData,
-								size_t idxA,
-								size_t idxB,
-								size_t &comparisonCounter)
-	{
-		comparisonCounter++;
-		if (pairData[idxA].large <= pairData[idxB].large)
-		{
-			IndexPair	result = { idxA, idxB };
-			return (result);
-		}
-		IndexPair	result = { idxB, idxA };
-		return (result);
-	}
-
-	static void	makePairs(const std::vector<PairType> &pairData,
-							const std::vector<size_t> &data,
-							std::vector<IndexPair> &outPairs,
-							bool &hasStraggler,
-							size_t &straggler,
-							size_t &comparisonCounter)
-	{
-		outPairs.clear();
-		hasStraggler = false;
-		straggler = 0;
-		size_t	i = 0;
-		while (i + 1 < data.size())
-		{
-			IndexPair	pair = compare(pairData, data[i], data[i + 1], comparisonCounter);
-			outPairs.push_back(pair);
-			i += 2;
-		}
-		if (i < data.size())
-		{
-			hasStraggler = true;
-			straggler = data[i];
-		}
-	}
-
-	static void	reorderPairs(const std::vector<IndexPair> &originalPairs,
-							const std::vector<size_t> &sortedLarge,
-							std::vector<IndexPair> &out)
-	{
-		out.clear();
-		out.reserve(sortedLarge.size());
-		for (size_t i = 0; i < sortedLarge.size(); ++i)
-		{
-			size_t	target = sortedLarge[i];
-			for (size_t j = 0; j < originalPairs.size(); ++j)
-			{
-				if (originalPairs[j].large == target)
-				{
-					out.push_back(originalPairs[j]);
-					break;
-				}
-			}
-		}
-	}
-
-	static void	buildMainAndPend(const std::vector<IndexPair> &sortedPairs,
-								Chain &chain)
-	{
-		chain.mainChain.clear();
-		chain.pend.clear();
-		chain.posOfLarge.clear();
-		chain.order.clear();
-		for (size_t i = 0; i < sortedPairs.size(); ++i)
-		{
-			chain.mainChain.push_back(sortedPairs[i].large);
-			chain.pend.push_back(sortedPairs[i].small);
-			chain.posOfLarge.push_back(i);
-		}
-	}
-
-	static size_t	binarySearch(const std::vector<PairType> &pairData,
-								const std::vector<size_t> &mainChain,
-								size_t valueIndex,
-								size_t leftBound,
-								size_t rightBound,
-								size_t &comparisonCounter)
-	{
-		size_t	left = leftBound;
-		size_t	right = rightBound;
-		if (left == right)
-			return (left);
-		while (left + 1 < right)
-		{
-			size_t	midpoint = left + (right - left) / 2;
-			size_t	midIndex = mainChain[midpoint];
-			comparisonCounter++;
-			if (pairData[valueIndex].large <= pairData[midIndex].large)
-				right = midpoint;
-			else
-				left = midpoint + 1;
-		}
-		comparisonCounter++;
-		if (pairData[valueIndex].large <= pairData[mainChain[left]].large)
-			return (left);
-		return (right);
-	}
-
-	static void	insertPend(const std::vector<PairType> &pairData,
-							Chain &chain,
-							size_t &comparisonCounter,
-							PmergeMe &owner)
-	{
-		for (size_t i = 0; i < chain.order.size(); ++i)
-		{
-			size_t	insertIndex = chain.order[i];
-			size_t	valueIndex = chain.pend[insertIndex];
-			size_t	rightBound = chain.posOfLarge[insertIndex];
-			size_t	insertPos = binarySearch(pairData, chain.mainChain, valueIndex, 0, rightBound, comparisonCounter);
-			chain.mainChain.insert(chain.mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), valueIndex);
-			owner.increasePosOfLargeVector(chain.posOfLarge, insertPos);
-		}
-	}
-
-	static void	insertStraggler(const std::vector<PairType> &pairData,
-								std::vector<size_t> &mainChain,
-								size_t stragglerIndex,
-								size_t &comparisonCounter)
-	{
-		size_t	insertPos = binarySearch(pairData, mainChain, stragglerIndex, 0, mainChain.size(), comparisonCounter);
-		mainChain.insert(mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), stragglerIndex);
-	}
-};
 // ==============================================================
 // Ctors & Dtors & Copy Assignment Operator
 // ==============================================================
@@ -305,7 +129,6 @@ void	PmergeMe::makePairsVector(const std::vector<unsigned int> &data,
 
 PmergeMe::PairV	PmergeMe::compareNumberInPairVector(const unsigned int &a, const unsigned int &b)
 {
-	_vectorComparisonCount++;
 	PairV	temp;
 	if (a <= b)
 	{
@@ -320,20 +143,27 @@ PmergeMe::PairV	PmergeMe::compareNumberInPairVector(const unsigned int &a, const
 	return (temp);
 }
 
+/*
+	std::sort is a function template.
+	One of its overloads takes comparison predicate 
+		---> bool comp(const T& a, const T& b);
+*/
 void	PmergeMe::sortPairsByLargeVector(std::vector<PairV> &pairs)
 {
-	if (pairs.size() <= 1)
-		return ;
-	std::vector<PairV>	original(pairs);
-	std::vector<size_t>	indices(pairs.size());
-	for (size_t i = 0; i < indices.size(); ++i)
-		indices[i] = i;
-	size_t	beforeCount = _vectorComparisonCount;
-	PairIndexSorter<PairV>::sort(*this, original, indices, _vectorComparisonCount);
-	size_t	afterCount = _vectorComparisonCount;
-	std::cerr << "Pair sort comparisons: " << (afterCount - beforeCount) << std::endl;
-	for (size_t i = 0; i < indices.size(); ++i)
-		pairs[i] = original[indices[i]];
+	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairVLessByLarge);
+}
+
+/*
+	A function to determine which pair come earlier : left/right side
+	std::sort will determine swapping/keep according to its algorithm
+*/
+
+bool	PmergeMe::pairVLessByLarge(const PairV &lhs, const PairV &rhs)
+{
+	if (lhs.large < rhs.large)
+		return (true);
+	else
+		return (false);
 }
 
 void	PmergeMe::initialiseVectorChain(VectorChain &vectorChain)
@@ -364,7 +194,6 @@ void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 void	PmergeMe::insertPendtoMainChainVector(VectorChain &vectorChain)
 {
 	size_t	i = 0;
-	size_t	startCount = _vectorComparisonCount;
 	while (i < vectorChain.order.size())
 	{
 		size_t	insertIndex = vectorChain.order[i];
@@ -375,7 +204,6 @@ void	PmergeMe::insertPendtoMainChainVector(VectorChain &vectorChain)
 		increasePosOfLargeVector(vectorChain.posOfLarge, insertPos);
 		i++;
 	}
-	std::cerr << "Pend insert comparisons: " << (_vectorComparisonCount - startCount) << std::endl;
 }
 
 /*
@@ -395,21 +223,17 @@ size_t	PmergeMe::boundedBinarySearchVector(const std::vector<unsigned int> &main
 {
 	size_t	left = leftBound;
 	size_t	right = rightBound;
-	if (left == right)
-		return (left);
-	while (left + 1 < right)
+	size_t	insertPos = 0;
+	while (left < right)
 	{
 		size_t	midpoint = left + (right - left) / 2;
-		_vectorComparisonCount++;
 		if (insertValue <= mainChain[midpoint])
 			right = midpoint;
 		else
 			left = midpoint + 1;
 	}
-	_vectorComparisonCount++;
-	if (insertValue <= mainChain[left])
-		return (left);
-	return (right);
+	insertPos = left;
+	return (insertPos);
 }
 
 void	PmergeMe::increasePosOfLargeVector(std::vector<size_t> &posOfLarge, size_t insertPos)
@@ -430,10 +254,8 @@ void	PmergeMe::insertStragglerintoMainChainVector(std::vector<unsigned int> &mai
 	unsigned int	straggler = vectorPair.straggler;
 	if (hasStraggler == true)
 	{
-		size_t	startCount = _vectorComparisonCount;
 		size_t	insertPos = boundedBinarySearchVector(mainChain, straggler, 0, mainChain.size());
 		mainChain.insert(mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), straggler);
-		std::cerr << "Straggler insert comparisons: " << (_vectorComparisonCount - startCount) << std::endl;
 	}
 }
 
@@ -493,7 +315,6 @@ void	PmergeMe::makePairsDeque(const std::deque<unsigned int> &data,
 
 PmergeMe::PairD	PmergeMe::compareNumberInPairDeque(const unsigned int &a, const unsigned int &b)
 {
-	_dequeComparisonCount++;
 	PairD	temp;
 	if (a <= b)
 	{
@@ -515,17 +336,20 @@ PmergeMe::PairD	PmergeMe::compareNumberInPairDeque(const unsigned int &a, const 
 */
 void	PmergeMe::sortPairsByLargeDeque(std::deque<PairD> &pairs)
 {
-	if (pairs.size() <= 1)
-		return ;
-	std::vector<PairD>	original(pairs.begin(), pairs.end());
-	std::vector<size_t>	indices(pairs.size());
-	for (size_t i = 0; i < indices.size(); ++i)
-		indices[i] = i;
-	PairIndexSorter<PairD>::sort(*this, original, indices, _dequeComparisonCount);
-	std::deque<PairD>	sorted;
-	for (size_t i = 0; i < indices.size(); ++i)
-		sorted.push_back(original[indices[i]]);
-	pairs.swap(sorted);
+	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairDLessByLarge);
+}
+
+/*
+	A function to determine which pair come earlier : left/right side
+	std::sort will determine swapping/keep according to its algorithm
+*/
+
+bool	PmergeMe::pairDLessByLarge(const PairD &lhs, const PairD &rhs)
+{
+	if (lhs.large < rhs.large)
+		return (true);
+	else
+		return (false);
 }
 
 void	PmergeMe::initialiseDequeChain(DequeChain &dequeChain)
@@ -594,7 +418,6 @@ size_t	PmergeMe::boundedBinarySearchDeque(const std::deque<unsigned int> &mainCh
 	while (left < right)
 	{
 		size_t	midpoint = left + (right - left) / 2;
-		_dequeComparisonCount++;
 		if (insertValue <= mainChain[midpoint])
 			right = midpoint;
 		else
