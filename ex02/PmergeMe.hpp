@@ -37,37 +37,48 @@ class PmergeMe
 
 		struct VectorPair
 		{
-			std::vector<PairV> pairs;
-			bool	hasStraggler;
-			unsigned int	straggler;
+			std::vector<PairV>	pairs;
+			bool				hasStraggler;
+			unsigned int		straggler;
 		};
 
 		struct VectorChain
 		{
-			std::vector<unsigned int> mainChain;
-			std::vector<unsigned int> pend;
-			std::vector<size_t>	posOfLarge; // max search when inserting pend to main
-			std::vector<size_t>	order;
-		}
+			std::vector<unsigned int>	mainChain;
+			std::vector<unsigned int>	pend;
+			std::vector<size_t>			posOfLarge; // max search when inserting pend to main
+			std::vector<size_t>			order;
+		};
 
-		void fjSortVector(std::vector<unsigned int> &data);
-		void initialiseVectorPair(VectorPair &vectorPair);
+		void	fjSortVector(std::vector<unsigned int> &data);
+		void	initialiseVectorPair(VectorPair &vectorPair);
 
-		void makePairsVector(const std::vector<unsigned int> &data,
+		void	makePairsVector(const std::vector<unsigned int> &data,
 								VectorPair &vectorPair);
 		PairV	compareNumberInPair(const unsigned int &a, const unsigned int &b);
 
-		void sortPairsByLargeVector(std::vector<PairV> &pairs);
+		void	sortPairsByLargeVector(std::vector<PairV> &pairs);
 		
 		void	initialiseVectorChain(VectorChain &vectorChain);
-		void buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
+		void	buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 									VectorChain &vectorChain);
-
-		size_t boundedBinarySearchVector(const std::vector<unsigned int> &mainChain,
-											unsigned int value,
+		
+		void	assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder);
+		void	makeJacobsthalNumbers(size_t limit, std::vector<size_t> &JacobsthalNumber);
+		void	buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insertOrder);
+		
+		void	insertPendtoMainChainVector(VectorChain &vectorChain);
+		size_t	boundedBinarySearchVector(const std::vector<unsigned int> &mainChain,
+											unsigned int insertValue,
 											size_t leftBound,
 											size_t rightBound);
-
+		void	increasePosOfLargeVector(std::vector<size_t> &posOfLarge, size_t insertPos);
+		
+		void	insertStragglerintoMainChainVector(std::vector<unsigned int> &mainChain,
+													VectorPair &vectorPair);
+		
+		
+		
 		// Ford-Johnson (Deque)
 		struct PairD
 		{
@@ -75,29 +86,52 @@ class PmergeMe
 			unsigned int large;
 		};
 
-		void fjSortDeque(std::deque<unsigned int> &data);
+		struct DequePair
+		{
+			std::deque<PairD> pairs;
+			bool	hasStraggler;
+			unsigned int	straggler;
+		};
 
-		void makePairsDeque(const std::deque<unsigned int> &data,
-							std::vector<PairD> &pairs,
+		struct DequeChain
+		{
+			std::deque<unsigned int>	mainChain;
+			std::deque<unsigned int>	pend;
+			std::deque<size_t>	posOfLarge; // max search when inserting pend to main
+			std::deque<size_t>	order;
+		};
+
+		void	fjSortDeque(std::deque<unsigned int> &data);
+		void	initialiseDequePair(DequePair &dequePair);
+
+		void	makePairsDeque(const std::deque<unsigned int> &data,
+							std::deque<PairD> &pairs,
 							bool &hasStraggler,
 							unsigned int &straggler);
+		PairD	compareNumberInPair(const unsigned int &a, const unsigned int &b);
 
-		void sortPairsByLargeDeque(std::vector<PairD> &pairs);
+		void	sortPairsByLargeDeque(std::deque<PairD> &pairs);
 
-		void buildMainAndPendDeque(const std::vector<PairD> &pairs,
+		void	initialiseDequeChain(DequeChain &dequeChain);
+		void	buildMainAndPendDeque(const std::deque<PairD> &pairs,
 									std::deque<unsigned int> &mainChain,
-									std::vector<unsigned int> &pend,
-									std::vector<size_t> &posOfLarge);
+									std::deque<unsigned int> &pend,
+									std::deque<size_t> &posOfLarge);
+		
+		void	assignInsertOrder(size_t numPairs, std::deque<size_t> &JacobsthalNumber, std::deque<size_t> &insertOrder);
+		void	makeJacobsthalNumbers(size_t limit, std::deque<size_t> &JacobsthalNumber);
+		void	buildJacobsthalOrder(size_t numPairs, std::deque<size_t> &insertOrder);
 
-		size_t boundedBinarySearchDeque(const std::deque<unsigned int> &mainChain,
+		void	insertPendtoMainChainDeque(DequeChain &dequeChain);
+		size_t	boundedBinarySearchDeque(const std::deque<unsigned int> &mainChain,
 										unsigned int value,
 										size_t leftBound,
 										size_t rightBound);
+		void	increasePosOfLargeDeque(std::deque<size_t> &posOfLarge, size_t insertPos);
 		
-		// Helper
-		void	assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder);
-		void makeJacobsthalNumbers(size_t limit, std::vector<size_t> &JacobsthalNumber);
-		void buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insertOrder);
+		void	insertStragglerintoMainChainDeque(std::deque<unsigned int> &mainChain,
+													DequePair &dequePair);
+
 
 		static bool pairVLessByLarge(const PairV &lhs, const PairV &rhs);
 		static bool pairDLessByLarge(const PairD &lhs, const PairD &rhs);

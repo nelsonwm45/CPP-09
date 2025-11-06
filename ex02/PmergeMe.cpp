@@ -35,7 +35,7 @@ void	PmergeMe::setInput(const std::vector<unsigned int> &input)
 	_vec.clear();
 	this->_vec = input;
 	size_t	i = 0;
-	while (i < values.size())
+	while (i < input.size())
 	{
 		_deq.push_back(input[i]);
 		i++;
@@ -50,6 +50,13 @@ void	PmergeMe::sortUsingVector(std::vector<unsigned int> &outSorted)
 	fjSortVector(outSorted);
 }
 
+void	PmergeMe::sortUsingDeque(std::vector<unsigned int> &outSorted)
+{
+	outSorted = this->_deq;
+	if (outSorted.size() <= 1)
+		return ;
+	fjSortDeque(outSorted);
+}
 
 // ==============================================================
 // Ford-Johnson (Vector)
@@ -68,7 +75,10 @@ void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
 	initialiseVectorChain(vectorChain);
 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
 	buildJacobsthalOrder(vectorChain.pend.size(), vectorChain.order);
-
+	insertPendtoMainChainVector(vectorChain);
+	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
+	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
+	this->_vec = data;
 }
 
 void	PmergeMe::initialiseVectorPair(VectorPair &vectorPair)
@@ -107,8 +117,8 @@ PairV	PmergeMe::compareNumberInPair(const unsigned int &a, const unsigned int &b
 	}
 	else
 	{
-		temp.small = a;
-		temp.large = b;
+		temp.small = b;
+		temp.large = a;
 	}
 	return (temp);
 }
@@ -157,15 +167,261 @@ void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 	}
 }
 
+/*
+	Inserting Pend value to Main Chain
+	rightBound indicate the position of max value to be compared in Main Chain
+*/
+void	PmergeMe::insertPendtoMainChainVector(VectorChain &vectorChain)
+{
+	size_t	i = 0;
+	while (i < vectorChain.order.size())
+	{
+		size_t	insertIndex = vectorChain.order[i];
+		unsigned int value = vectorChain.pend[insertIndex];
+		size_t	rightBound = vectorChain.posOfLarge[insertIndex];
+		size_t	insertPos = boundedBinarySearchVector(vectorChain.mainChain, value, 0, rightBound);
+		vectorChain.mainChain.insert(vectorChain.mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), value);
+		increasePosOfLargeVector(vectorChain.posOfLarge(), insertPos);
+		i++;
+	}
+}
+
+/*
+	Bounded Binary Search
+	determine the midpoint of window, mid = L + (R -L)/2, e.g. : window = {3,  8, 10, 14, 18, 25, 32, 35, 49}, mid = 18
+	if insert number, x > mid; then go right window, x < mid, go left window
+		e.g. : x = 2; x < 18(mid); go left window; left window = { 3, 8, 10, 14}
+	repeat again until the window has no more items.
+
+	Imagine it's trying to shrink the window of searching by adjusting left and right bound until
+	left == right
+*/
+size_t	PmergeMe::boundedBinarySearchVector(const std::vector<unsigned int> &mainChain,
+											unsigned int insertValue,
+											size_t leftBound,
+											size_t rightBound)
+{
+	size_t	left = leftBound;
+	size_t	right = rightBound;
+	size_t	insertPos = 0;
+	while (left < right)
+	{
+		size_t	midpoint = left + (right - left) / 2;
+		if (insertValue <= mainChain[midpoint])
+			right = midpoint;
+		else
+			left = midpoint + 1;
+	}
+	insertPos = left;
+	return (insertPos);
+}
+
+void	PmergeMe::increasePosOfLargeVector(std::vector<size_t> &posOfLarge, size_t insertPos)
+{
+	size_t	i = 0;
+	while (i < posOfLarge.size())
+	{
+		if (posOfLarge[i] >= insertPos)
+			posOfLarge[i]++;
+		i++;
+	}
+}
+
+void	PmergeMe::insertStragglerintoMainChainVector(std::vector<unsigned int> &mainChain,
+													VectorPair &vectorPair)
+{
+	bool	hasStraggler = vectorPair.hasStraggler;
+	unsigned int	straggler = vectorPair.straggler;
+	if (hasStraggler == true)
+	{
+		size_t	insertPos = boundedBinarySearchVector(mainChain, straggler, 0, mainChain.size());
+		mainChain.insert(mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), straggler);
+	}
+}
 
 // ==============================================================
 // Ford-Johnson (Deque)
 // ==============================================================
 
+/*
+	Straggler -> leftover single element
+*/
+void	PmergeMe::fjSortDeque(std::deque<unsigned int> &data)
+{
+	DequePair	dequePair;
+	initialiseDequePair(dequePair);
+	makePairsDeque(data, dequePair);
+	sortPairsByLargeDeque(dequePair.pairs);
+	DequeChain	dequeChain;
+	initialiseDequeChain(dequeChain);
+	buildMainAndPendDeque(vectorPair.pairs, dequeChain);
+	buildJacobsthalOrder(dequeChain.pend.size(), dequeChain.order);
+	insertPendtoMainChainDeque(dequeChain);
+	insertStragglerintoMainChainDeque(dequeChain.mainChain, dequePair);
+	data.assign(dequeChain.mainChain.begin(), dequeChain.mainChain.end());
+	this->_deq = data;
+}
 
+void	PmergeMe::initialiseDequePair(DequePair &vectorPair)
+{
+	vectorPair.pairs.clear();
+	vectorPair.hasStraggler = false;
+	vectorPair.straggler = 0;
+}
+
+void	PmergeMe::makePairsDeque(const std::vector<unsigned int> &data,
+							DequePair &vectorPair)
+{
+	size_t	i = 0;
+	while (i + 1 < data.size()) // because we access two elements at a time
+	{
+		unsigned int	a = data[i];
+		unsigned int	b = data[i + 1];
+		PairD	newPairs = compareNumberInPair(a, b);
+		vectorPair.pairs.push_back(newPairs);
+		i += 2;
+	}
+	if (i < data.size()) // means has straggler
+	{
+		vectorPair.hasStraggler = true;
+		vectorPair.straggler = data[i];
+	}
+}
+
+PairD	PmergeMe::compareNumberInPair(const unsigned int &a, const unsigned int &b)
+{
+	PairD	temp;
+	if (a <= b)
+	{
+		temp.small = a;
+		temp.large = b;
+	}
+	else
+	{
+		temp.small = b;
+		temp.large = a;
+	}
+	return (temp);
+}
+
+/*
+	std::sort is a function template.
+	One of its overloads takes comparison predicate 
+		---> bool comp(const T& a, const T& b);
+*/
+void	PmergeMe::sortPairsByLargeDeque(std::vector<PairD> &pairs)
+{
+	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairDLessByLarge);
+}
+
+/*
+	A function to determine which pair come earlier : left/right side
+	std::sort will determine swapping/keep according to its algorithm
+*/
+
+bool	PmergeMe::pairDLessByLarge(const PairD &lhs, const PairD &rhs)
+{
+	if (lhs.large < rhs.large)
+		return (true);
+	else
+		return (false);
+}
+
+void	PmergeMe::initialiseDequeChain(DequeChain &dequeChain)
+{
+	dequeChain.mainChain.clear();
+	dequeChain.pend.clear();
+	dequeChain.posOfLarge.clear();
+	dequeChain.order.clear();
+}
+
+void	PmergeMe::buildMainAndPendDeque(const std::vector<PairD> &sortedPairs,
+										DequeChain &dequeChain)
+{
+	size_t	i = 0;
+	while (i < sortedPairs.size())
+	{
+		dequeChain.mainChain.push_back(sortedPairs[i].large);
+		dequeChain.pend.push_back(sortedPairs[i].small);
+		dequeChain.posOfLarge.push_back(i);
+		i++;
+	}
+}
+
+/*
+	Inserting Pend value to Main Chain
+	rightBound indicate the position of max value to be compared in Main Chain
+*/
+void	PmergeMe::insertPendtoMainChainDeque(DequeChain &dequeChain)
+{
+	size_t	i = 0;
+	while (i < dequeChain.order.size())
+	{
+		size_t	insertIndex = dequeChain.order[i];
+		unsigned int value = dequeChain.pend[insertIndex];
+		size_t	rightBound = dequeChain.posOfLarge[insertIndex];
+		size_t	insertPos = boundedBinarySearchDeque(dequeChain.mainChain, value, 0, rightBound);
+		dequeChain.mainChain.insert(dequeChain.mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), value);
+		increasePosOfLargeDeque(dequeChain.posOfLarge, insertPos);
+		i++;
+	}
+}
+
+/*
+	Bounded Binary Search
+	determine the midpoint of window, mid = L + (R -L)/2, e.g. : window = {3,  8, 10, 14, 18, 25, 32, 35, 49}, mid = 18
+	if insert number, x > mid; then go right window, x < mid, go left window
+		e.g. : x = 2; x < 18(mid); go left window; left window = { 3, 8, 10, 14}
+	repeat again until the window has no more items.
+
+	Imagine it's trying to shrink the window of searching by adjusting left and right bound until
+	left == right
+*/
+size_t	PmergeMe::boundedBinarySearchDeque(const std::vector<unsigned int> &mainChain,
+											unsigned int insertValue,
+											size_t leftBound,
+											size_t rightBound)
+{
+	size_t	left = leftBound;
+	size_t	right = rightBound;
+	size_t	insertPos = 0;
+	while (left < right)
+	{
+		size_t	midpoint = left + (right - left) / 2;
+		if (insertValue <= mainChain[midpoint])
+			right = midpoint;
+		else
+			left = midpoint + 1;
+	}
+	insertPos = left;
+	return (insertPos);
+}
+
+void	PmergeMe::increasePosOfLargeDeque(std::vector<size_t> &posOfLarge, size_t insertPos)
+{
+	size_t	i = 0;
+	while (i < posOfLarge.size())
+	{
+		if (posOfLarge[i] >= insertPos)
+			posOfLarge[i]++;
+		i++;
+	}
+}
+
+void	PmergeMe::insertStragglerintoMainChainDeque(std::vector<unsigned int> &mainChain,
+													DequePair &vectorPair)
+{
+	bool	hasStraggler = vectorPair.hasStraggler;
+	unsigned int	straggler = vectorPair.straggler;
+	if (hasStraggler == true)
+	{
+		size_t	insertPos = boundedBinarySearchDeque(mainChain, straggler, 0, mainChain.size());
+		mainChain.insert(mainChain.begin() + static_cast<std::ptrdiff_t>(insertPos), straggler);
+	}
+}
 
 // ==============================================================
-// Helper
+// Helper (Vector)
 // ==============================================================
 
 /*
@@ -198,7 +454,6 @@ void	PmergeMe::buildJacobsthalOrder(size_t numPairs, std::vector<size_t> &insert
  */
 void	PmergeMe::assignInsertOrder(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder)
 {
-	insertOrder.reserve(insertOrder.size() + numPairs);
 	size_t	lastCovered = 1;
 	for (size_t k = 2; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
 	{
@@ -224,6 +479,80 @@ void	PmergeMe::assignInsertOrder(size_t numPairs, std::vector<size_t> &Jacobstha
 	Sequence: 0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341,...
 */
 void	PmergeMe::makeJacobsthalNumbers(size_t limit, std::vector<size_t> &JacobsthalNumber)
+{
+	JacobsthalNumber.clear();
+	JacobsthalNumber.push_back(0);
+	if (limit >= 1)
+		JacobsthalNumber.push_back(1);
+	while (1)
+	{
+		if (JacobsthalNumber.size() < 2)
+			break;
+		size_t	a = JacobsthalNumber[JacobsthalNumber.size() - 1];
+		size_t	b = JacobsthalNumber[JacobsthalNumber.size() - 2];
+		size_t	nextValue = a + 2 * b;
+		JacobsthalNumber.push_back(nextValue);
+		if (nextValue >= limit)
+			break;
+	}
+}
+
+// ==============================================================
+// Helper (Deque)
+// ==============================================================
+
+/*
+	nPairs = 7, J = {0,1,3,5,11,...}
+	Window (1,3] → indices 2,1 (push 1,0? careful: we push i-1,
+		so 2→1, 1→0 but start is excluded → we actually push 1 then 0… 
+		however we later also push a final 0, 
+		so in practice we clamp at start=1 and skip i==1? 
+		Then pushes i-1 while i>start, so it yields 2→1, i=1 stops → good: 1 only.)
+	Window (3,5] → push 4,3 → indices 3,2
+	Tail (5,7] → push 7,6,5 → indices 6,5,4
+	Finally push 0
+*/
+void	PmergeMe::buildJacobsthalOrder(size_t numPairs, std::deque<size_t> &insertOrder)
+{
+	if (numPairs == 0)
+		return ;
+	if (numPairs == 1)
+	{
+		insertOrder.push_back(0);
+		return ;
+	}
+	std::deque<size_t>	JacobsthalNumber;
+	makeJacobsthalNumbers(numPairs, JacobsthalNumber);
+	assignInsertOrder(numPairs, JacobsthalNumber, insertOrder);
+}
+
+void	PmergeMe::assignInsertOrder(size_t numPairs, std::deque<size_t> &JacobsthalNumber, std::deque<size_t> &insertOrder)
+{
+	size_t	lastCovered = 1;
+	for (size_t k = 2; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
+	{
+		size_t	start = JacobsthalNumber[k - 1];
+		size_t	end = JacobsthalNumber[k];
+		if (end > numPairs)
+			end = numPairs;
+		if (start >= end)
+			continue;
+		for (size_t i = end; i > start; i--)
+			insertOrder.push_back(i - 1);
+		lastCovered = end;
+	}
+	for (size_t i = numPairs; i > lastCovered; i--)
+		insertOrder.push_back(i - 1);
+	insertOrder.push_back(0);
+}
+
+/*
+	Jacobsthal Sequence Formula
+	J0 = 0 , J1 = 1
+	Jn = 2 * (Jn-2) + (Jn-1)
+	Sequence: 0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341,...
+*/
+void	PmergeMe::makeJacobsthalNumbers(size_t limit, std::deque<size_t> &JacobsthalNumber)
 {
 	JacobsthalNumber.clear();
 	JacobsthalNumber.push_back(0);
