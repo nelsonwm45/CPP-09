@@ -1,5 +1,4 @@
 #include "PmergeMe.hpp"
-#include <algorithm> // std::sort
 #include <limits>
 
 // ==============================================================
