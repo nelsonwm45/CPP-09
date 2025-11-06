@@ -560,22 +560,27 @@ void	PmergeMe::buildJacobsthalOrderVector(size_t numPairs, std::vector<size_t> &
  */
 void	PmergeMe::assignInsertOrderVector(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder)
 {
-	size_t	lastCovered = 1;
-	for (size_t k = 2; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
+	if (numPairs == 0)
+		return;
+	size_t lastCovered = 0;  // Start from 0 since we're now working with adjusted indices
+	for (size_t k = 1; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
 	{
-		size_t	start = JacobsthalNumber[k - 1];
-		size_t	end = JacobsthalNumber[k];
+		size_t start = JacobsthalNumber[k - 1];
+		size_t end = JacobsthalNumber[k];
 		if (end > numPairs)
 			end = numPairs;
 		if (start >= end)
 			continue;
+		
+		// Insert in descending order from end to start (exclusive)
 		for (size_t i = end; i > start; i--)
 			insertOrder.push_back(i - 1);
+		
 		lastCovered = end;
 	}
+	// Handle any remaining elements
 	for (size_t i = numPairs; i > lastCovered; i--)
 		insertOrder.push_back(i - 1);
-	insertOrder.push_back(0);
 }
 
 /*
@@ -634,22 +639,28 @@ void	PmergeMe::buildJacobsthalOrderDeque(size_t numPairs, std::deque<size_t> &in
 
 void	PmergeMe::assignInsertOrderDeque(size_t numPairs, std::deque<size_t> &JacobsthalNumber, std::deque<size_t> &insertOrder)
 {
-	size_t	lastCovered = 1;
-	for (size_t k = 2; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
+	if (numPairs == 0)
+		return;
+
+	size_t lastCovered = 0;
+
+	for (size_t k = 1; k < JacobsthalNumber.size() && lastCovered < numPairs; k++)
 	{
-		size_t	start = JacobsthalNumber[k - 1];
-		size_t	end = JacobsthalNumber[k];
+		size_t start = JacobsthalNumber[k - 1];
+		size_t end = JacobsthalNumber[k];
 		if (end > numPairs)
 			end = numPairs;
 		if (start >= end)
 			continue;
+		
 		for (size_t i = end; i > start; i--)
 			insertOrder.push_back(i - 1);
+		
 		lastCovered = end;
 	}
+
 	for (size_t i = numPairs; i > lastCovered; i--)
 		insertOrder.push_back(i - 1);
-	insertOrder.push_back(0);
 }
 
 /*
