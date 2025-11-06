@@ -56,13 +56,15 @@ class PmergeMe
 		};
 
 		void	fjSortVector(std::vector<unsigned int> &data);
+		void	fjSortVectorInternal(std::vector<unsigned int> &data);
 		void	initialiseVectorPair(VectorPair &vectorPair);
 
 		void	makePairsVector(const std::vector<unsigned int> &data,
 								VectorPair &vectorPair);
 		PairV	compareNumberInPairVector(const unsigned int &a, const unsigned int &b);
 
-		void	sortPairsByLargeVector(std::vector<PairV> &pairs);
+		// Recursive Sorting for large
+		void	recursiveSortPairsVector(std::vector<PairV> &pairs);
 		static bool	pairVLessByLarge(const PairV &lhs, const PairV &rhs);
 		
 		void	initialiseVectorChain(VectorChain &vectorChain);
@@ -108,6 +110,7 @@ class PmergeMe
 		};
 
 		void	fjSortDeque(std::deque<unsigned int> &data);
+		void	fjSortDequeInternal(std::deque<unsigned int> &data);
 		void	initialiseDequePair(DequePair &dequePair);
 
 		void	makePairsDeque(const std::deque<unsigned int> &data,
@@ -116,7 +119,8 @@ class PmergeMe
 							unsigned int &straggler);
 		PairD	compareNumberInPairDeque(const unsigned int &a, const unsigned int &b);
 
-		void	sortPairsByLargeDeque(std::deque<PairD> &pairs);
+		// Recursive call
+		void recursiveSortPairsDeque(std::deque<PairD> &pairs);
 		static bool	pairDLessByLarge(const PairD &lhs, const PairD &rhs);
 
 		void	initialiseDequeChain(DequeChain &dequeChain);

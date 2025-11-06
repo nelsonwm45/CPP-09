@@ -90,7 +90,7 @@ void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
 	VectorPair	vectorPair;
 	initialiseVectorPair(vectorPair);
 	makePairsVector(data, vectorPair);
-	sortPairsByLargeVector(vectorPair.pairs);
+	recursiveSortPairsVector(vectorPair.pairs);
 	VectorChain	vectorChain;
 	initialiseVectorChain(vectorChain);
 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
@@ -129,6 +129,7 @@ void	PmergeMe::makePairsVector(const std::vector<unsigned int> &data,
 
 PmergeMe::PairV	PmergeMe::compareNumberInPairVector(const unsigned int &a, const unsigned int &b)
 {
+	this->_vectorComparisonCount++;
 	PairV	temp;
 	if (a <= b)
 	{
@@ -143,14 +144,36 @@ PmergeMe::PairV	PmergeMe::compareNumberInPairVector(const unsigned int &a, const
 	return (temp);
 }
 
-/*
-	std::sort is a function template.
-	One of its overloads takes comparison predicate 
-		---> bool comp(const T& a, const T& b);
-*/
-void	PmergeMe::sortPairsByLargeVector(std::vector<PairV> &pairs)
+void PmergeMe::recursiveSortPairsVector(std::vector<PairV> &pairs)
 {
-	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairVLessByLarge);
+	if (pairs.size() <= 1)
+		return;
+
+	// Extract the 'large' values into a temporary vector
+	std::vector<unsigned int> largeValues;
+	for (size_t i = 0; i < pairs.size(); i++)
+		largeValues.push_back(pairs[i].large);
+
+	// Recursively sort using Ford-Johnson
+	fjSortVector(largeValues);
+
+	// Rebuild pairs in sorted order by matching large values
+	std::vector<PairV> sortedPairs;
+	for (size_t i = 0; i < largeValues.size(); i++)
+	{
+		// Find the pair with this large value
+		for (size_t j = 0; j < pairs.size(); j++)
+		{
+			if (pairs[j].large == largeValues[i])
+			{
+				sortedPairs.push_back(pairs[j]);
+				// Mark as used (set to max value to avoid reuse)
+				pairs[j].large = std::numeric_limits<unsigned int>::max();
+				break;
+			}
+		}
+	}
+	pairs = sortedPairs;
 }
 
 /*
@@ -177,12 +200,28 @@ void	PmergeMe::initialiseVectorChain(VectorChain &vectorChain)
 void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 										VectorChain &vectorChain)
 {
-	size_t	i = 0;
+	if (sortedPairs.empty())
+		return;
+
+	// First, insert b₁ (first small) into main chain
+	vectorChain.mainChain.push_back(sortedPairs[0].small);
+
+	// Then insert all large elements
+	size_t i = 0;
 	while (i < sortedPairs.size())
 	{
 		vectorChain.mainChain.push_back(sortedPairs[i].large);
+		i++;
+	}
+
+	// Build pend array (b₂, b₃, b₄, ... - skipping b₁ since it's already in main)
+	i = 1;  // Start from index 1, skip the first pair's small element
+	while (i < sortedPairs.size())
+	{
 		vectorChain.pend.push_back(sortedPairs[i].small);
-		vectorChain.posOfLarge.push_back(i);
+		// Position of corresponding large element in main chain
+		// +1 because b₁ is at position 0
+		vectorChain.posOfLarge.push_back(i + 1);
 		i++;
 	}
 }
@@ -227,6 +266,7 @@ size_t	PmergeMe::boundedBinarySearchVector(const std::vector<unsigned int> &main
 	while (left < right)
 	{
 		size_t	midpoint = left + (right - left) / 2;
+		this->_vectorComparisonCount++;
 		if (insertValue <= mainChain[midpoint])
 			right = midpoint;
 		else
@@ -271,7 +311,7 @@ void	PmergeMe::fjSortDeque(std::deque<unsigned int> &data)
 	DequePair	dequePair;
 	initialiseDequePair(dequePair);
 	makePairsDeque(data, dequePair.pairs, dequePair.hasStraggler, dequePair.straggler);
-	sortPairsByLargeDeque(dequePair.pairs);
+	recursiveSortPairsDeque(dequePair.pairs);
 	DequeChain	dequeChain;
 	initialiseDequeChain(dequeChain);
 	buildMainAndPendDeque(dequePair.pairs, dequeChain.mainChain, dequeChain.pend, dequeChain.posOfLarge);
@@ -315,6 +355,7 @@ void	PmergeMe::makePairsDeque(const std::deque<unsigned int> &data,
 
 PmergeMe::PairD	PmergeMe::compareNumberInPairDeque(const unsigned int &a, const unsigned int &b)
 {
+	this->_dequeComparisonCount++;
 	PairD	temp;
 	if (a <= b)
 	{
@@ -329,14 +370,36 @@ PmergeMe::PairD	PmergeMe::compareNumberInPairDeque(const unsigned int &a, const 
 	return (temp);
 }
 
-/*
-	std::sort is a function template.
-	One of its overloads takes comparison predicate 
-		---> bool comp(const T& a, const T& b);
-*/
-void	PmergeMe::sortPairsByLargeDeque(std::deque<PairD> &pairs)
+void PmergeMe::recursiveSortPairsDeque(std::deque<PairD> &pairs)
 {
-	std::sort(pairs.begin(), pairs.end(), PmergeMe::pairDLessByLarge);
+	if (pairs.size() <= 1)
+		return;
+
+	// Extract the 'large' values into a temporary deque
+	std::deque<unsigned int> largeValues;
+	for (size_t i = 0; i < pairs.size(); i++)
+		largeValues.push_back(pairs[i].large);
+
+	// Recursively sort using Ford-Johnson
+	fjSortDeque(largeValues);
+
+	// Rebuild pairs in sorted order by matching large values
+	std::deque<PairD> sortedPairs;
+	for (size_t i = 0; i < largeValues.size(); i++)
+	{
+		// Find the pair with this large value
+		for (size_t j = 0; j < pairs.size(); j++)
+		{
+			if (pairs[j].large == largeValues[i])
+			{
+				sortedPairs.push_back(pairs[j]);
+				// Mark as used (set to max value to avoid reuse)
+				pairs[j].large = std::numeric_limits<unsigned int>::max();
+				break;
+			}
+		}
+	}
+	pairs = sortedPairs;
 }
 
 /*
@@ -365,15 +428,27 @@ void	PmergeMe::buildMainAndPendDeque(const std::deque<PairD> &sortedPairs,
 										std::deque<unsigned int> &pend,
 										std::deque<size_t> &posOfLarge)
 {
-	mainChain.clear();
-	pend.clear();
-	posOfLarge.clear();
-	size_t	i = 0;
+	if (sortedPairs.empty())
+		return;
+
+	// First, insert b₁ (first small) into main chain
+	mainChain.push_back(sortedPairs[0].small);
+
+	// Then insert all large elements
+	size_t i = 0;
 	while (i < sortedPairs.size())
 	{
 		mainChain.push_back(sortedPairs[i].large);
+		i++;
+	}
+
+	// Build pend array (b₂, b₃, b₄, ... - skipping b₁)
+	i = 1;
+	while (i < sortedPairs.size())
+	{
 		pend.push_back(sortedPairs[i].small);
-		posOfLarge.push_back(i);
+		// +1 because b₁ is at position 0
+		posOfLarge.push_back(i + 1);
 		i++;
 	}
 }
@@ -418,6 +493,7 @@ size_t	PmergeMe::boundedBinarySearchDeque(const std::deque<unsigned int> &mainCh
 	while (left < right)
 	{
 		size_t	midpoint = left + (right - left) / 2;
+		this->_dequeComparisonCount++;
 		if (insertValue <= mainChain[midpoint])
 			right = midpoint;
 		else
