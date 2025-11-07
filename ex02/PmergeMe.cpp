@@ -218,13 +218,11 @@ void PmergeMe::mergePairsVector(const std::vector<PairV> &left,
 			j++;
 		}
 	}
-
 	while (i < left.size())
 	{
 		result.push_back(left[i]);
 		i++;
 	}
-
 	while (j < right.size())
 	{
 		result.push_back(right[j]);
