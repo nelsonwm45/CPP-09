@@ -8,6 +8,15 @@
 #include <iostream>
 #include <sstream>
 #include <cstddef>
+#include <cmath> // Required for std::log2 and std::ceil
+
+# ifndef CONVERSION
+#  define CONVERSION 0.000001
+# endif
+
+// # ifndef CONVERSION
+// #  define CONVERSION 1
+// # endif
 
 class PmergeMe
 {
@@ -25,6 +34,7 @@ class PmergeMe
 		void sortUsingDeque(std::deque<unsigned int> &outSorted);
 		size_t	getVectorComparisonCount() const;
 		size_t	getDequeComparisonCount() const;
+		size_t	getNumberSize() const;
 
 	private:
 		// Stored containers
@@ -65,7 +75,9 @@ class PmergeMe
 
 		// Recursive Sorting for large
 		void	recursiveSortPairsVector(std::vector<PairV> &pairs);
-		static bool	pairVLessByLarge(const PairV &lhs, const PairV &rhs);
+		void	mergePairsVector(const std::vector<PairV> &left, 
+								const std::vector<PairV> &right,
+								std::vector<PairV> &result);
 		
 		void	initialiseVectorChain(VectorChain &vectorChain);
 		void	buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
@@ -120,8 +132,10 @@ class PmergeMe
 		PairD	compareNumberInPairDeque(const unsigned int &a, const unsigned int &b);
 
 		// Recursive call
-		void recursiveSortPairsDeque(std::deque<PairD> &pairs);
-		static bool	pairDLessByLarge(const PairD &lhs, const PairD &rhs);
+		void	recursiveSortPairsDeque(std::deque<PairD> &pairs);
+		void	mergePairsDeque(const std::deque<PairD> &left, 
+								const std::deque<PairD> &right,
+								std::deque<PairD> &result);
 
 		void	initialiseDequeChain(DequeChain &dequeChain);
 		void	buildMainAndPendDeque(const std::deque<PairD> &pairs,

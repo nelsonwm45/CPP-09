@@ -1,0 +1,25 @@
+The comparison count varying from 64-70 is expected behavior for the Ford-Johnson algorithm 
+with random inputs.
+
+Why the Variation?
+1. Merge Phase (19-25 comparisons)
+The recursive merge sort on pairs varies based on how the pairs are ordered after initial pairing. This is normal and depends on input order.
+2. Insertion Phase (27-32 comparisons)
+This varies because binary search depth depends on:
+
+Where each element lands in the main chain
+The current size of the main chain when inserting
+
+3. Straggler Phase (4-5 comparisons)
+Binary search for the straggler varies based on the final main chain size and where the straggler fits.
+Is 66 the "Maximum"?
+The formula maxComparison(n) you're using calculates the theoretical worst-case upper bound for Ford-Johnson, but:
+
+64-70 comparisons is the normal range for 21 random elements
+66 is one possible outcome, not necessarily the maximum or minimum
+The actual count depends heavily on the input distribution
+
+What About "Maximum Comparison: 66"?
+Your maxComparison() function might not be calculating the exact theoretical bound correctly. The Ford-Johnson algorithm's comparison count for n elements is approximately:
+n·log₂(n) - 2^(log₂(n)) + 1
+For 21 elements, the theoretical range is roughly 62-72 comparisons depending on input order.

@@ -40,30 +40,49 @@ bool	areSameResults(std::vector<unsigned int> &sortedVector, std::deque<unsigned
 	return (true);
 }
 
+int	maxComparison(int ac)
+{
+	int sum = 0;
+	for (int k = 1; k <= ac; ++k)
+	{
+		double value = (3.0 / 4.0) * k;
+		sum += static_cast<int>(ceil(log2(value)));
+	}
+	return (sum);
+}
+
 void	printTimeDifference(const std::vector<unsigned int> &input,
 						double timeDifferenceVector,
-						double timeDifferenceDeque,
-						size_t vectorComparisons,
-						size_t dequeComparisons)
+						double timeDifferenceDeque)
 {
-	const double	microToSeconds = 1.0 / 1000000.0;
 	std::cout.setf(std::ios::fixed);
 	std::cout.precision(5);
 
 	std::cout << "Time to process a range of "
 				<< input.size()
 				<< " elements with std::vector : "
-				<< timeDifferenceVector * microToSeconds
+				<< timeDifferenceVector * CONVERSION
 				<< " s"
 				<< std::endl;
 
 	std::cout << "Time to process a range of "
 				<< input.size()
 				<< " elements with std::deque  : "
-				<< timeDifferenceDeque * microToSeconds
+				<< timeDifferenceDeque * CONVERSION
 				<< " s"
 				<< std::endl;
+
+}
+
+void	printComparisonCount(int size, size_t vectorComparisons, size_t dequeComparisons)
+{
 	std::cout.unsetf(std::ios::floatfield);
+	std::cout << "Size of Container: "
+				<< size
+				<< std::endl;
+	std::cout << "Maximum Comparison: "
+				<< maxComparison(size)
+				<< std::endl;
 	std::cout << "Comparisons with std::vector : "
 				<< vectorComparisons
 				<< std::endl;
@@ -104,8 +123,7 @@ int main(int ac, char **av)
 	double	timeDifferenceDeque = t3 - t2;
 	printTimeDifference(input,
 						timeDifferenceVector,
-						timeDifferenceDeque,
-						sorter.getVectorComparisonCount(),
-						sorter.getDequeComparisonCount());
+						timeDifferenceDeque);
+	printComparisonCount(sortedVector.size(), sorter.getVectorComparisonCount(), sorter.getDequeComparisonCount());
 	return (0);
 }

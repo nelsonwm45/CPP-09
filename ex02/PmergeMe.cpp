@@ -77,6 +77,11 @@ size_t	PmergeMe::getDequeComparisonCount() const
 	return (_dequeComparisonCount);
 }
 
+size_t	PmergeMe::getNumberSize() const
+{
+	return (_vec.size());
+}
+
 // ==============================================================
 // Ford-Johnson (Vector)
 // ==============================================================
@@ -84,18 +89,48 @@ size_t	PmergeMe::getDequeComparisonCount() const
 /*
 	Straggler -> leftover single element
 */
-void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
+// void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
+// {
+// 	VectorPair	vectorPair;
+// 	initialiseVectorPair(vectorPair);
+// 	makePairsVector(data, vectorPair);
+// 	recursiveSortPairsVector(vectorPair.pairs);
+// 	VectorChain	vectorChain;
+// 	initialiseVectorChain(vectorChain);
+// 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
+// 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
+// 	insertPendtoMainChainVector(vectorChain);
+// 	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
+// 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
+// 	this->_vec = data;
+// }
+
+void PmergeMe::fjSortVector(std::vector<unsigned int> &data)
 {
-	VectorPair	vectorPair;
+	VectorPair vectorPair;
 	initialiseVectorPair(vectorPair);
+
+	size_t beforePairing = _vectorComparisonCount;
 	makePairsVector(data, vectorPair);
+	std::cout << "Pairing: " << (_vectorComparisonCount - beforePairing) << std::endl;
+
+	size_t beforeMerge = _vectorComparisonCount;
 	recursiveSortPairsVector(vectorPair.pairs);
-	VectorChain	vectorChain;
+	std::cout << "Merge: " << (_vectorComparisonCount - beforeMerge) << std::endl;
+
+	VectorChain vectorChain;
 	initialiseVectorChain(vectorChain);
 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
+
+	size_t beforeInsertion = _vectorComparisonCount;
 	insertPendtoMainChainVector(vectorChain);
+	std::cout << "Insertion: " << (_vectorComparisonCount - beforeInsertion) << std::endl;
+
+	size_t beforeStraggler = _vectorComparisonCount;
 	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
+	std::cout << "Straggler: " << (_vectorComparisonCount - beforeStraggler) << std::endl;
+
 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
 	this->_vec = data;
 }
@@ -148,31 +183,52 @@ void PmergeMe::recursiveSortPairsVector(std::vector<PairV> &pairs)
 	if (pairs.size() <= 1)
 		return;
 
-	// Extract the 'large' values into a temporary vector
-	std::vector<unsigned int> largeValues;
-	for (size_t i = 0; i < pairs.size(); i++)
-		largeValues.push_back(pairs[i].large);
+	// Split into two halves
+	size_t mid = pairs.size() / 2;
+	std::vector<PairV> left(pairs.begin(), pairs.begin() + mid);
+	std::vector<PairV> right(pairs.begin() + mid, pairs.end());
 
-	// Recursively sort using Ford-Johnson
-	fjSortVector(largeValues);
+	// Recursively sort both halves
+	recursiveSortPairsVector(left);
+	recursiveSortPairsVector(right);
 
-	// Rebuild pairs in sorted order by matching large values
-	std::vector<PairV> sortedPairs;
-	for (size_t i = 0; i < largeValues.size(); i++)
+	// Merge the sorted halves
+	mergePairsVector(left, right, pairs);
+}
+
+void PmergeMe::mergePairsVector(const std::vector<PairV> &left, 
+								const std::vector<PairV> &right,
+								std::vector<PairV> &result)
+{
+	result.clear();
+	size_t i = 0, j = 0;
+
+	while (i < left.size() && j < right.size())
 	{
-		// Find the pair with this large value
-		for (size_t j = 0; j < pairs.size(); j++)
+		_vectorComparisonCount++;
+		if (left[i].large <= right[j].large)
 		{
-			if (pairs[j].large == largeValues[i])
-			{
-				sortedPairs.push_back(pairs[j]);
-				// Mark as used (set to max value to avoid reuse)
-				pairs[j].large = std::numeric_limits<unsigned int>::max();
-				break;
-			}
+			result.push_back(left[i]);
+			i++;
+		}
+		else
+		{
+			result.push_back(right[j]);
+			j++;
 		}
 	}
-	pairs = sortedPairs;
+
+	while (i < left.size())
+	{
+		result.push_back(left[i]);
+		i++;
+	}
+
+	while (j < right.size())
+	{
+		result.push_back(right[j]);
+		j++;
+	}
 }
 
 /*
@@ -180,13 +236,13 @@ void PmergeMe::recursiveSortPairsVector(std::vector<PairV> &pairs)
 	std::sort will determine swapping/keep according to its algorithm
 */
 
-bool	PmergeMe::pairVLessByLarge(const PairV &lhs, const PairV &rhs)
-{
-	if (lhs.large < rhs.large)
-		return (true);
-	else
-		return (false);
-}
+// bool	PmergeMe::pairVLessByLarge(const PairV &lhs, const PairV &rhs)
+// {
+// 	if (lhs.large < rhs.large)
+// 		return (true);
+// 	else
+// 		return (false);
+// }
 
 void	PmergeMe::initialiseVectorChain(VectorChain &vectorChain)
 {
@@ -374,31 +430,52 @@ void PmergeMe::recursiveSortPairsDeque(std::deque<PairD> &pairs)
 	if (pairs.size() <= 1)
 		return;
 
-	// Extract the 'large' values into a temporary deque
-	std::deque<unsigned int> largeValues;
-	for (size_t i = 0; i < pairs.size(); i++)
-		largeValues.push_back(pairs[i].large);
+	// Split into two halves
+	size_t mid = pairs.size() / 2;
+	std::deque<PairD> left(pairs.begin(), pairs.begin() + mid);
+	std::deque<PairD> right(pairs.begin() + mid, pairs.end());
 
-	// Recursively sort using Ford-Johnson
-	fjSortDeque(largeValues);
+	// Recursively sort both halves
+	recursiveSortPairsDeque(left);
+	recursiveSortPairsDeque(right);
 
-	// Rebuild pairs in sorted order by matching large values
-	std::deque<PairD> sortedPairs;
-	for (size_t i = 0; i < largeValues.size(); i++)
+	// Merge the sorted halves
+	mergePairsDeque(left, right, pairs);
+}
+
+void PmergeMe::mergePairsDeque(const std::deque<PairD> &left, 
+								const std::deque<PairD> &right,
+								std::deque<PairD> &result)
+{
+	result.clear();
+	size_t i = 0, j = 0;
+
+	while (i < left.size() && j < right.size())
 	{
-		// Find the pair with this large value
-		for (size_t j = 0; j < pairs.size(); j++)
+		_dequeComparisonCount++;
+		if (left[i].large <= right[j].large)
 		{
-			if (pairs[j].large == largeValues[i])
-			{
-				sortedPairs.push_back(pairs[j]);
-				// Mark as used (set to max value to avoid reuse)
-				pairs[j].large = std::numeric_limits<unsigned int>::max();
-				break;
-			}
+			result.push_back(left[i]);
+			i++;
+		}
+		else
+		{
+			result.push_back(right[j]);
+			j++;
 		}
 	}
-	pairs = sortedPairs;
+
+	while (i < left.size())
+	{
+		result.push_back(left[i]);
+		i++;
+	}
+
+	while (j < right.size())
+	{
+		result.push_back(right[j]);
+		j++;
+	}
 }
 
 /*
@@ -406,13 +483,13 @@ void PmergeMe::recursiveSortPairsDeque(std::deque<PairD> &pairs)
 	std::sort will determine swapping/keep according to its algorithm
 */
 
-bool	PmergeMe::pairDLessByLarge(const PairD &lhs, const PairD &rhs)
-{
-	if (lhs.large < rhs.large)
-		return (true);
-	else
-		return (false);
-}
+// bool	PmergeMe::pairDLessByLarge(const PairD &lhs, const PairD &rhs)
+// {
+// 	if (lhs.large < rhs.large)
+// 		return (true);
+// 	else
+// 		return (false);
+// }
 
 void	PmergeMe::initialiseDequeChain(DequeChain &dequeChain)
 {
@@ -544,11 +621,6 @@ void	PmergeMe::buildJacobsthalOrderVector(size_t numPairs, std::vector<size_t> &
 {
 	if (numPairs == 0)
 		return ;
-	if (numPairs == 1)
-	{
-		insertOrder.push_back(0);
-		return ;
-	}
 	std::vector<size_t>	JacobsthalNumber;
 	makeJacobsthalNumbersVector(numPairs, JacobsthalNumber);
 	assignInsertOrderVector(numPairs, JacobsthalNumber, insertOrder);
@@ -626,11 +698,6 @@ void	PmergeMe::buildJacobsthalOrderDeque(size_t numPairs, std::deque<size_t> &in
 {
 	if (numPairs == 0)
 		return ;
-	if (numPairs == 1)
-	{
-		insertOrder.push_back(0);
-		return ;
-	}
 	std::deque<size_t>	JacobsthalNumber;
 	makeJacobsthalNumbersDeque(numPairs, JacobsthalNumber);
 	assignInsertOrderDeque(numPairs, JacobsthalNumber, insertOrder);
