@@ -191,5 +191,7 @@ void	printLineWithCap(const std::string &label, const Container &c, size_t maxTo
 	std::cout << std::endl;
 }
 
+template <typename Container>
+void	printContainerElements(Container)
 
 #endif
