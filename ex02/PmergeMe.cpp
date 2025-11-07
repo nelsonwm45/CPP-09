@@ -89,51 +89,52 @@ size_t	PmergeMe::getNumberSize() const
 /*
 	Straggler -> leftover single element
 */
-// void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
-// {
-// 	VectorPair	vectorPair;
-// 	initialiseVectorPair(vectorPair);
-// 	makePairsVector(data, vectorPair);
-// 	recursiveSortPairsVector(vectorPair.pairs);
-// 	VectorChain	vectorChain;
-// 	initialiseVectorChain(vectorChain);
-// 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
-// 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
-// 	insertPendtoMainChainVector(vectorChain);
-// 	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
-// 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
-// 	this->_vec = data;
-// }
-
-void PmergeMe::fjSortVector(std::vector<unsigned int> &data)
+void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
 {
-	VectorPair vectorPair;
+	VectorPair	vectorPair;
 	initialiseVectorPair(vectorPair);
-
-	size_t beforePairing = _vectorComparisonCount;
 	makePairsVector(data, vectorPair);
-	std::cout << "Pairing: " << (_vectorComparisonCount - beforePairing) << std::endl;
-
-	size_t beforeMerge = _vectorComparisonCount;
 	recursiveSortPairsVector(vectorPair.pairs);
-	std::cout << "Merge: " << (_vectorComparisonCount - beforeMerge) << std::endl;
-
-	VectorChain vectorChain;
+	VectorChain	vectorChain;
 	initialiseVectorChain(vectorChain);
 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
-
-	size_t beforeInsertion = _vectorComparisonCount;
 	insertPendtoMainChainVector(vectorChain);
-	std::cout << "Insertion: " << (_vectorComparisonCount - beforeInsertion) << std::endl;
-
-	size_t beforeStraggler = _vectorComparisonCount;
 	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
-	std::cout << "Straggler: " << (_vectorComparisonCount - beforeStraggler) << std::endl;
-
 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
 	this->_vec = data;
 }
+
+// Debug Version
+// void PmergeMe::fjSortVector(std::vector<unsigned int> &data)
+// {
+// 	VectorPair vectorPair;
+// 	initialiseVectorPair(vectorPair);
+
+// 	size_t beforePairing = _vectorComparisonCount;
+// 	makePairsVector(data, vectorPair);
+// 	std::cout << "Pairing: " << (_vectorComparisonCount - beforePairing) << std::endl;
+
+// 	size_t beforeMerge = _vectorComparisonCount;
+// 	recursiveSortPairsVector(vectorPair.pairs);
+// 	std::cout << "Merge: " << (_vectorComparisonCount - beforeMerge) << std::endl;
+
+// 	VectorChain vectorChain;
+// 	initialiseVectorChain(vectorChain);
+// 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
+// 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
+
+// 	size_t beforeInsertion = _vectorComparisonCount;
+// 	insertPendtoMainChainVector(vectorChain);
+// 	std::cout << "Insertion: " << (_vectorComparisonCount - beforeInsertion) << std::endl;
+
+// 	size_t beforeStraggler = _vectorComparisonCount;
+// 	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
+// 	std::cout << "Straggler: " << (_vectorComparisonCount - beforeStraggler) << std::endl;
+
+// 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
+// 	this->_vec = data;
+// }
 
 void	PmergeMe::initialiseVectorPair(VectorPair &vectorPair)
 {
@@ -206,7 +207,7 @@ void PmergeMe::mergePairsVector(const std::vector<PairV> &left,
 	while (i < left.size() && j < right.size())
 	{
 		_vectorComparisonCount++;
-		if (left[i].large <= right[j].large)
+		if (left[i].large < right[j].large)
 		{
 			result.push_back(left[i]);
 			i++;
@@ -453,7 +454,7 @@ void PmergeMe::mergePairsDeque(const std::deque<PairD> &left,
 	while (i < left.size() && j < right.size())
 	{
 		_dequeComparisonCount++;
-		if (left[i].large <= right[j].large)
+		if (left[i].large < right[j].large)
 		{
 			result.push_back(left[i]);
 			i++;

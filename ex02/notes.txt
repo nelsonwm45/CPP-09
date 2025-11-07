@@ -23,3 +23,7 @@ What About "Maximum Comparison: 66"?
 Your maxComparison() function might not be calculating the exact theoretical bound correctly. The Ford-Johnson algorithm's comparison count for n elements is approximately:
 n·log₂(n) - 2^(log₂(n)) + 1
 For 21 elements, the theoretical range is roughly 62-72 comparisons depending on input order.
+
+
+The only way to guarantee exactly 66 comparisons for this specific input would be to use the original Ford-Johnson paper's sorting method for the pairs, 
+which doesn't use standard merge sort. But that's overly complex and your current implementation is perfectly valid.

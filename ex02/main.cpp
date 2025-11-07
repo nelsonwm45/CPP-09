@@ -124,6 +124,6 @@ int main(int ac, char **av)
 	printTimeDifference(input,
 						timeDifferenceVector,
 						timeDifferenceDeque);
-	printComparisonCount(sortedVector.size(), sorter.getVectorComparisonCount(), sorter.getDequeComparisonCount());
+	// printComparisonCount(sortedVector.size(), sorter.getVectorComparisonCount(), sorter.getDequeComparisonCount());
 	return (0);
 }
