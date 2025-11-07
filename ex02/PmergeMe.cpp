@@ -184,52 +184,33 @@ void PmergeMe::recursiveSortPairsVector(std::vector<PairV> &pairs)
 	if (pairs.size() <= 1)
 		return;
 
-	// Split into two halves
-	size_t mid = pairs.size() / 2;
-	std::vector<PairV> left(pairs.begin(), pairs.begin() + mid);
-	std::vector<PairV> right(pairs.begin() + mid, pairs.end());
+	// Extract the 'large' values into a temporary vector
+	std::vector<unsigned int> largeValues;
+	for (size_t i = 0; i < pairs.size(); i++)
+		largeValues.push_back(pairs[i].large);
 
-	// Recursively sort both halves
-	recursiveSortPairsVector(left);
-	recursiveSortPairsVector(right);
+	// Recursively sort using Ford-Johnson
+	fjSortVector(largeValues);
 
-	// Merge the sorted halves
-	mergePairsVector(left, right, pairs);
-}
-
-
-void PmergeMe::mergePairsVector(const std::vector<PairV> &left, 
-								const std::vector<PairV> &right,
-								std::vector<PairV> &result)
-{
-	result.clear();
-	size_t i = 0, j = 0;
-
-	while (i < left.size() && j < right.size())
+	// Rebuild pairs in sorted order by matching large values
+	std::vector<PairV> sortedPairs;
+	for (size_t i = 0; i < largeValues.size(); i++)
 	{
-		_vectorComparisonCount++;
-		if (left[i].large < right[j].large)
+		// Find the pair with this large value
+		for (size_t j = 0; j < pairs.size(); j++)
 		{
-			result.push_back(left[i]);
-			i++;
-		}
-		else
-		{
-			result.push_back(right[j]);
-			j++;
+			if (pairs[j].large == largeValues[i])
+			{
+				sortedPairs.push_back(pairs[j]);
+				// Mark as used (set to max value to avoid reuse)
+				pairs[j].large = std::numeric_limits<unsigned int>::max();
+				break;
+			}
 		}
 	}
-	while (i < left.size())
-	{
-		result.push_back(left[i]);
-		i++;
-	}
-	while (j < right.size())
-	{
-		result.push_back(right[j]);
-		j++;
-	}
+	pairs = sortedPairs;
 }
+
 
 /*
 	A function to determine which pair come earlier : left/right side
@@ -261,7 +242,7 @@ void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 	// First, insert b₁ (first small) into main chain
 	vectorChain.mainChain.push_back(sortedPairs[0].small);
 
-	// Then insert all large elements
+	// Then insert all large elements, a
 	size_t i = 0;
 	while (i < sortedPairs.size())
 	{
@@ -430,52 +411,31 @@ void PmergeMe::recursiveSortPairsDeque(std::deque<PairD> &pairs)
 	if (pairs.size() <= 1)
 		return;
 
-	// Split into two halves
-	size_t mid = pairs.size() / 2;
-	std::deque<PairD> left(pairs.begin(), pairs.begin() + mid);
-	std::deque<PairD> right(pairs.begin() + mid, pairs.end());
+	// Extract the 'large' values into a temporary deque
+	std::deque<unsigned int> largeValues;
+	for (size_t i = 0; i < pairs.size(); i++)
+		largeValues.push_back(pairs[i].large);
 
-	// Recursively sort both halves
-	recursiveSortPairsDeque(left);
-	recursiveSortPairsDeque(right);
+	// Recursively sort using Ford-Johnson
+	fjSortDeque(largeValues);
 
-	// Merge the sorted halves
-	mergePairsDeque(left, right, pairs);
-}
-
-void PmergeMe::mergePairsDeque(const std::deque<PairD> &left, 
-								const std::deque<PairD> &right,
-								std::deque<PairD> &result)
-{
-	result.clear();
-	size_t i = 0, j = 0;
-
-	while (i < left.size() && j < right.size())
+	// Rebuild pairs in sorted order by matching large values
+	std::deque<PairD> sortedPairs;
+	for (size_t i = 0; i < largeValues.size(); i++)
 	{
-		_dequeComparisonCount++;
-		if (left[i].large < right[j].large)
+		// Find the pair with this large value
+		for (size_t j = 0; j < pairs.size(); j++)
 		{
-			result.push_back(left[i]);
-			i++;
-		}
-		else
-		{
-			result.push_back(right[j]);
-			j++;
+			if (pairs[j].large == largeValues[i])
+			{
+				sortedPairs.push_back(pairs[j]);
+				// Mark as used (set to max value to avoid reuse)
+				pairs[j].large = std::numeric_limits<unsigned int>::max();
+				break;
+			}
 		}
 	}
-
-	while (i < left.size())
-	{
-		result.push_back(left[i]);
-		i++;
-	}
-
-	while (j < right.size())
-	{
-		result.push_back(right[j]);
-		j++;
-	}
+	pairs = sortedPairs;
 }
 
 /*
@@ -606,17 +566,6 @@ void	PmergeMe::insertStragglerintoMainChainDeque(std::deque<unsigned int> &mainC
 // Helper (Vector)
 // ==============================================================
 
-/*
-	nPairs = 7, J = {0,1,3,5,11,...}
-	Window (1,3] → indices 2,1 (push 1,0? careful: we push i-1,
-		so 2→1, 1→0 but start is excluded → we actually push 1 then 0… 
-		however we later also push a final 0, 
-		so in practice we clamp at start=1 and skip i==1? 
-		Then pushes i-1 while i>start, so it yields 2→1, i=1 stops → good: 1 only.)
-	Window (3,5] → push 4,3 → indices 3,2
-	Tail (5,7] → push 7,6,5 → indices 6,5,4
-	Finally push 0
-*/
 void	PmergeMe::buildJacobsthalOrderVector(size_t numPairs, std::vector<size_t> &insertOrder)
 {
 	if (numPairs == 0)
@@ -683,17 +632,6 @@ void	PmergeMe::makeJacobsthalNumbersVector(size_t limit, std::vector<size_t> &Ja
 // Helper (Deque)
 // ==============================================================
 
-/*
-	nPairs = 7, J = {0,1,3,5,11,...}
-	Window (1,3] → indices 2,1 (push 1,0? careful: we push i-1,
-		so 2→1, 1→0 but start is excluded → we actually push 1 then 0… 
-		however we later also push a final 0, 
-		so in practice we clamp at start=1 and skip i==1? 
-		Then pushes i-1 while i>start, so it yields 2→1, i=1 stops → good: 1 only.)
-	Window (3,5] → push 4,3 → indices 3,2
-	Tail (5,7] → push 7,6,5 → indices 6,5,4
-	Finally push 0
-*/
 void	PmergeMe::buildJacobsthalOrderDeque(size_t numPairs, std::deque<size_t> &insertOrder)
 {
 	if (numPairs == 0)
@@ -821,4 +759,16 @@ bool	parseArgs(int ac, char **av, std::vector<unsigned int> &out)
 		return (false);
 	}
 	return (true);
+}
+
+std::ostream& operator<<(std::ostream& os, const PmergeMe::PairV& pair)
+{
+	os << "(" << pair.small << "," << pair.large << ")";
+	return (os);
+}
+
+std::ostream& operator<<(std::ostream& os, const PmergeMe::PairD& pair)
+{
+	os << "(" << pair.small << "," << pair.large << ")";
+	return (os);
 }

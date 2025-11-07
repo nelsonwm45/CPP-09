@@ -91,6 +91,11 @@ void	printComparisonCount(int size, size_t vectorComparisons, size_t dequeCompar
 				<< std::endl;
 }
 
+
+/*
+	./PmergeMe 11 2 17 16 8 6 15 10 3 21 1 18 9 14 19 12 5 4 20 13 7
+	./PmergeMe `shuf -i 1-1000 -n 21 | tr "\n" " " `
+*/
 int main(int ac, char **av)
 {
 	std::vector<unsigned int> input;
@@ -124,6 +129,8 @@ int main(int ac, char **av)
 	printTimeDifference(input,
 						timeDifferenceVector,
 						timeDifferenceDeque);
-	// printComparisonCount(sortedVector.size(), sorter.getVectorComparisonCount(), sorter.getDequeComparisonCount());
+	// printComparisonCount(sortedVector.size(), 
+	// 					sorter.getVectorComparisonCount(), 
+	// 					sorter.getDequeComparisonCount());
 	return (0);
 }
