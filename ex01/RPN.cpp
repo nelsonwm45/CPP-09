@@ -172,6 +172,14 @@ bool	RPN::handleOperatorToken(const Token &token)
 	return (true);
 }
 
+/*
+	_stack.top() access the "last added element"
+	pop the first LAST element and put at right side 
+	pop the second LAST element and put at left side
+
+	9 1 /
+	9 / 1
+*/
 bool	RPN::popTwoOperands(long &lhs, long &rhs)
 {
 	if (_stack.size() < 2)
