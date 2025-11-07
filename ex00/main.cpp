@@ -16,6 +16,7 @@
 	2012-01-11 | 1.2
 	2001-42-42
 
+	std::map has lower_bound and keys are unique
 */
 
 int main(int ac, char **av)

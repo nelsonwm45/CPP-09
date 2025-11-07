@@ -7,6 +7,7 @@
 #include <list>
 #include <sstream>
 #include <climits>  // LONG_MAX, LONG_MIN
+#include <cctype> // std::isdigit
 
 /*
 	Infix (usual mathematical operation) : 3 + 4 * 2

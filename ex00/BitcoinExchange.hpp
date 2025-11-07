@@ -20,6 +20,7 @@
 # include <fstream> // std::ifstream
 # include <stdlib.h> // for strtod
 # include <cerrno> // for errno/ERANGE
+# include <cctype> // std::isdigit
 
 
 class	BitcoinExchange

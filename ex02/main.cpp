@@ -46,7 +46,7 @@ int	maxComparison(int ac)
 	for (int k = 1; k <= ac; ++k)
 	{
 		double value = (3.0 / 4.0) * k;
-		sum += static_cast<int>(ceil(log2(value)));
+		sum += static_cast<int>(ceil(std::log(value) / std::log(2.0)));
 	}
 	return (sum);
 }
@@ -126,7 +126,6 @@ void	printComparisonCount(int size, size_t vectorComparisons, size_t dequeCompar
 
 	Larger mixed (odd length)
 	./PmergeMe 50 40 60 20 10 80 70 30 90 100 15 5 55
-
 */
 int main(int ac, char **av)
 {
@@ -166,3 +165,10 @@ int main(int ac, char **av)
 	// 					sorter.getDequeComparisonCount());
 	return (0);
 }
+
+
+/*
+	Choose Deque, Vector
+	- allows random-access (we need to implement binary search), where list can't
+	- but are O(n) but list is O(1)
+*/
