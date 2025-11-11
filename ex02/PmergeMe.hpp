@@ -101,7 +101,8 @@ class PmergeMe
 		void	initialiseVectorChain(VectorChain &vectorChain);
 		void	buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 									VectorChain &vectorChain);
-		
+		void	insertStragglerIntoPendVector(VectorPair &vectorPair, VectorChain &vectorChain);
+
 		void	assignInsertOrderVector(size_t numPairs, std::vector<size_t> &JacobsthalNumber, std::vector<size_t> &insertOrder);
 		void	makeJacobsthalNumbersVector(size_t limit, std::vector<size_t> &JacobsthalNumber);
 		void	buildJacobsthalOrderVector(size_t numPairs, std::vector<size_t> &insertOrder);
@@ -135,7 +136,8 @@ class PmergeMe
 									std::deque<unsigned int> &mainChain,
 									std::deque<unsigned int> &pend,
 									std::deque<size_t> &posOfLarge);
-		
+		void	insertStragglerIntoPendDeque(DequePair &dequePair, DequeChain &dequeChain);
+
 		void	assignInsertOrderDeque(size_t numPairs, std::deque<size_t> &JacobsthalNumber, std::deque<size_t> &insertOrder);
 		void	makeJacobsthalNumbersDeque(size_t limit, std::deque<size_t> &JacobsthalNumber);
 		void	buildJacobsthalOrderDeque(size_t numPairs, std::deque<size_t> &insertOrder);

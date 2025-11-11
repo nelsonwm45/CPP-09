@@ -98,9 +98,10 @@ void	PmergeMe::fjSortVector(std::vector<unsigned int> &data)
 	VectorChain	vectorChain;
 	initialiseVectorChain(vectorChain);
 	buildMainAndPendVector(vectorPair.pairs, vectorChain);
+	insertStragglerIntoPendVector(vectorPair, vectorChain);
 	buildJacobsthalOrderVector(vectorChain.pend.size(), vectorChain.order);
 	insertPendtoMainChainVector(vectorChain);
-	insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
+	// insertStragglerintoMainChainVector(vectorChain.mainChain, vectorPair);
 	data.assign(vectorChain.mainChain.begin(), vectorChain.mainChain.end());
 	this->_vec = data;
 }
@@ -262,6 +263,16 @@ void	PmergeMe::buildMainAndPendVector(const std::vector<PairV> &sortedPairs,
 	}
 }
 
+void	PmergeMe::insertStragglerIntoPendVector(VectorPair &vectorPair, VectorChain &vectorChain)
+{
+	if (vectorPair.hasStraggler)
+	{
+		vectorChain.pend.push_back(vectorPair.straggler);
+		// Straggler's bound is the entire main chain
+		vectorChain.posOfLarge.push_back(vectorChain.mainChain.size());
+	}
+}
+
 /*
 	Inserting Pend value to Main Chain
 	rightBound indicate the position of max value to be compared in Main Chain
@@ -351,9 +362,10 @@ void	PmergeMe::fjSortDeque(std::deque<unsigned int> &data)
 	DequeChain	dequeChain;
 	initialiseDequeChain(dequeChain);
 	buildMainAndPendDeque(dequePair.pairs, dequeChain.mainChain, dequeChain.pend, dequeChain.posOfLarge);
+	insertStragglerIntoPendDeque(dequePair , dequeChain);
 	buildJacobsthalOrderDeque(dequeChain.pend.size(), dequeChain.order);
 	insertPendtoMainChainDeque(dequeChain);
-	insertStragglerintoMainChainDeque(dequeChain.mainChain, dequePair);
+	// insertStragglerintoMainChainDeque(dequeChain.mainChain, dequePair);
 	data.assign(dequeChain.mainChain.begin(), dequeChain.mainChain.end());
 	this->_deq = data;
 }
@@ -486,6 +498,16 @@ void	PmergeMe::buildMainAndPendDeque(const std::deque<PairD> &sortedPairs,
 		// +1 because b₁ is at position 0
 		posOfLarge.push_back(i + 1);
 		i++;
+	}
+}
+
+void	PmergeMe::insertStragglerIntoPendDeque(DequePair &dequePair, DequeChain &dequeChain)
+{
+	if (dequePair.hasStraggler)
+	{
+		dequeChain.pend.push_back(dequePair.straggler);
+		// Straggler's bound is the entire main chain
+		dequeChain.posOfLarge.push_back(dequeChain.mainChain.size());
 	}
 }
 
